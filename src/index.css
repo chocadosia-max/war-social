@@ -424,35 +424,30 @@ body {
     padding: 60px 0 80px 0; /* No side padding for stories */
   }
 
-  /* 💎 SQUAD STORIES (TOP RANKINGS) */
+  /* 💎 SQUAD STORIES (COMPACT) */
   .stories-row {
-    display: flex;
+    display: flex !important;
     overflow-x: auto;
-    padding: 12px 16px;
-    gap: 16px;
-    scrollbar-width: none;
-    border-bottom: 0.5px solid var(--border);
-    margin-bottom: 8px;
+    padding: 10px 12px;
+    gap: 12px;
     background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    scrollbar-width: none;
   }
-  .stories-row::-webkit-scrollbar { display: none; }
   
   .story-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    min-width: 68px;
+    gap: 4px;
+    min-width: 54px;
   }
   .story-ring {
-    width: 62px;
-    height: 62px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    padding: 3px;
+    padding: 2px;
     background: linear-gradient(45deg, var(--gold), var(--accent));
-    display: flex;
-    justify-content: center;
-    align-items: center;
   }
   .story-av {
     width: 100%;
@@ -460,12 +455,10 @@ body {
     border-radius: 50%;
     background: #000;
     border: 2px solid var(--surface);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.2rem;
+    font-size: 1rem;
+    font-weight: 900;
   }
-  .story-name { font-size: 0.65rem; color: var(--t2); font-weight: 600; text-transform: uppercase; }
+  .story-name { font-size: 0.6rem; color: var(--t3); letter-spacing: 0.5px; }
 
   /* 📋 INSTA-FEED POSTS */
   .card {
@@ -1045,11 +1038,54 @@ button:active, .nav-item:active, .comp-tool:active, .weapon-btn:active, .skin-bt
     border: 3px solid var(--bg);
   }
 
-  /* Post Cards Insta-style */
-  .post-card, .card {
-    border-radius: 0 !important;
-    border-left: none !important;
-    border-right: none !important;
-    margin-bottom: 8px !important;
+  /* Fix Post Cards for mobile */
+  .card {
+    padding: 12px !important;
+  }
+
+  .hp-bar-outer {
+    height: 4px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 2px;
+    margin: 8px 0;
+    overflow: hidden;
+  }
+  .hp-bar-inner {
+    height: 100%;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ⌨️ COMPOSER ALIGNMENT */
+  .mobile-composer {
+     display: flex;
+     gap: 10px;
+     align-items: center;
+     background: var(--surface);
+     padding: 10px 12px;
+     border-bottom: 1px solid var(--border);
+  }
+
+  .post-input {
+    flex: 1;
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid var(--border) !important;
+    height: 38px !important;
+    font-size: 0.85rem !important;
+    border-radius: 20px !important;
+    padding: 0 16px !important;
+  }
+  
+  .btn-post-round {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: #000;
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
+    box-shadow: 0 0 10px rgba(255,185,50,0.3);
   }
 }

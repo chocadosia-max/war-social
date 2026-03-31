@@ -295,34 +295,27 @@ export default function App() {
         </aside>
 
         <main className="main-col">
-          {/* INSTA STORIES (TOP PLAYERS) */}
+          {/* INSTA STORIES (COMPACT) */}
           <div className="stories-row mobile-only">
             {MOCK_LEADERS.map(l => (
               <div key={l.name} className="story-item" onClick={() => openUserProfile(l.name)}>
-                <div className="story-ring"><div className="story-av">{l.icon}</div></div>
+                <div className="story-ring"><div className="story-av" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{l.icon}</div></div>
                 <span className="story-name">{l.name.replace('GENERAL_', '')}</span>
               </div>
             ))}
-            {['TITAN', 'NEXUS', 'SQUAD'].map(name => (
+            {['TITAN', 'NEXUS', 'SQUAD', 'ALPHA', 'BRAVO'].map(name => (
               <div key={name} className="story-item" onClick={() => openUserProfile(name)}>
-                <div className="story-ring"><div className="story-av">{name.charAt(0)}</div></div>
+                <div className="story-ring"><div className="story-av" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{name.charAt(0)}</div></div>
                 <span className="story-name">{name}</span>
               </div>
             ))}
           </div>
 
-          <div className="feed-tabs">
-            <button className="nav-item active">✨ Feed</button>
-            <button className="nav-item">🛡️ Aliados</button>
-            <button className="nav-item">⚔️ Alvos</button>
-            <button className="nav-item">🔥 Em Alta</button>
-          </div>
-
-          <div className="card mobile-only" style={{ marginBottom: 12 }}>
-             <form onSubmit={handleDeploy} style={{ display: 'flex', gap: 12 }}>
-                <div className="profile-av" style={{ width: 40, height: 40 }}>{userName.charAt(0)}</div>
-                <input className="post-input" placeholder={`O que houve, ${userName}?`} value={newPostContent} onChange={e => setNewPostContent(e.target.value)} />
-                <button className="btn-post" style={{ padding: '0 15px' }}>⚔️</button>
+          <div className="mobile-composer mobile-only">
+             <div className="profile-av" style={{ width: 34, height: 34, fontSize: '0.8rem' }}>{userName.charAt(0)}</div>
+             <form onSubmit={handleDeploy} style={{ flex: 1, display: 'flex', gap: 8 }}>
+                <input className="post-input" placeholder={`Status de combate, ${userName}?`} value={newPostContent} onChange={e => setNewPostContent(e.target.value)} />
+                <button className="btn-post-round">⚔️</button>
              </form>
           </div>
 
@@ -330,28 +323,31 @@ export default function App() {
             {posts.map(post => (
               <article key={post.id} className={`card post ${shakeId === post.id ? 'shake-hard' : ''}`} id={`bunker-${post.id}`}>
                 <div className="post-head">
-                  <div className="post-av" onClick={() => openUserProfile(post.author)}>{post.author.charAt(0)}</div>
+                  <div className="post-av" style={{ width: 32, height: 32 }} onClick={() => openUserProfile(post.author)}>{post.author.charAt(0)}</div>
                   <div className="post-meta">
                     <span className="post-author">@{post.author}</span>
                     <span className="post-time">{timeAgo(post.created_at)}</span>
                   </div>
                 </div>
-                <div className="post-body">{post.content}</div>
-                <div className="bunker-hp">
-                   <div className="hp-row"><span>ESTADO: {post.hp}%</span> {post.shields > 0 && <span>🛡️ x{post.shields}</span>}</div>
-                   <div className="bar-track"><div className={`bar-fill ${post.hp > 30 ? 'bar-hp' : 'bar-danger'}`} style={{ width: `${post.hp}%` }}></div></div>
+                <div className="post-body" style={{ fontSize: '0.9rem', padding: '10px 0' }}>{post.content}</div>
+                
+                <div className="hp-bar-outer">
+                   <div className="hp-bar-inner" style={{ 
+                     width: `${post.hp}%`, 
+                     background: post.hp > 60 ? 'var(--accent)' : post.hp > 30 ? 'var(--gold)' : 'var(--red)' 
+                   }}></div>
                 </div>
+
                 <div className="post-actions">
-                  <button className="post-action atk" onClick={e => handleAttack(e, post.id, post)}>{selectedWeapon.icon} Atacar</button>
-                  <button className="post-action def" onClick={() => handleShield(post.id, post)}>🛡️ Defender</button>
-                  <button className="post-action com">💬 {comments.filter(c => c.post_id === post.id).length}</button>
+                  <button className="post-action atk" onClick={e => handleAttack(e, post.id, post)}>{selectedWeapon.icon} {selectedWeapon.damage} ATK</button>
+                  <button className="post-action def" onClick={() => handleShield(post.id, post)}>🛡️ DEF</button>
                 </div>
-                <div className="comments-section">
-                   {comments.filter(c => c.post_id === post.id).slice(-2).map(c => (
-                     <div key={c.id} className="comment-item"><strong>@{c.author}</strong> {c.content}</div>
+                <div className="comments-section" style={{ borderTop: 'none', padding: '0 4px' }}>
+                   {comments.filter(c => c.post_id === post.id).slice(-1).map(c => (
+                     <div key={c.id} className="comment-item" style={{ fontSize: '0.75rem', color: 'var(--t3)' }}><strong>@{c.author}</strong> {c.content}</div>
                    ))}
-                   <form onSubmit={e => handleComment(e, post.id)} className="comment-form">
-                     <input className="comment-input" placeholder="Responder..." value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))} />
+                   <form onSubmit={e => handleComment(e, post.id)} className="comment-form" style={{ marginTop: 8 }}>
+                     <input className="comment-input" style={{ background: 'transparent', height: 26, fontSize: '0.75rem' }} placeholder="Adicionar transissão..." value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))} />
                    </form>
                 </div>
               </article>
