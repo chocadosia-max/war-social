@@ -214,7 +214,7 @@ export default function App() {
     if (!error) { 
       setEnergy(prev => prev - cost); 
       setXp(prev => prev + 10); 
-      setHp(prev => Math.min(100, prev + 5)); // Increment HUD life when defending
+      setHp(prev => Math.min(100, prev + 5)); 
       logAction(userName, 'DEFEND', `reforçou o escudo de @${currentPost.author}.`); 
     }
   };
@@ -235,10 +235,8 @@ export default function App() {
     }
   };
 
-  // ── LOADING ──
   if (loadingAuth) return <div className="loading-wrap"><h2>⚔️ WAR SOCIAL</h2><p style={{ color: '#5A6A82' }}>Iniciando rede...</p></div>;
 
-  // ── AUTH ──
   if (!session) return (
     <div className="auth-wrap">
       <div className="auth-card">
@@ -255,465 +253,191 @@ export default function App() {
     </div>
   );
 
-  // ── MAIN APP ──
   return (
     <>
-      {/* FX */}
-      {projectiles.map(p => {
-        const angle = Math.atan2(p.endY - p.startY, p.endX - p.startX) * 180 / Math.PI;
-        const dist = Math.hypot(p.endX - p.startX, p.endY - p.startY);
-        return <div key={p.id} className="projectile" style={{ left: p.startX, top: p.startY, transform: `rotate(${angle}deg)` }} ref={el => { if (el) setTimeout(() => { el.style.transform = `rotate(${angle}deg) translate(${dist}px, 0)`; }, 10); }}>{selectedWeapon.icon}</div>;
-      })}
-      {explosions.map(ex => <div key={ex.id} className="explosion-ring" style={{ left: ex.x, top: ex.y }} />)}
-
-      {/* TOPNAV */}
       <header className="topnav">
         <div className="logo"><div className="logo-icon">⚔️</div><span className="logo-text">WarSocial</span></div>
-        <div className="nav-search"><span className="si">🔍</span><input type="text" placeholder="Buscar heróis, guildas, batalhas..." /></div>
         <nav className="nav-tabs">
           <button className="ntab active">🏠 Feed</button>
-          <button className="ntab">⚔️ Batalhas</button>
-          <button className="ntab">🏆 Ranking</button>
+          <button className="ntab" onClick={() => setShowSkills(true)}>🏆 Ranking</button>
         </nav>
         <div className="nav-right">
-          <button className="nav-ico" title="Notificações" onClick={() => setShowSkills(true)}>🧬<span className="nav-badge">{sp}</span></button>
-          <div className="nav-user" onClick={() => openUserProfile(userName)}>
+           <div className="nav-user" onClick={() => openUserProfile(userName)}>
             <div className="nav-av">{userName.charAt(0)}</div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="desktop-only" style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="nav-uname">{userName}</span>
-              <span className="nav-ulevel">⭐ {RANKS[rankIndex]} · {userFaction.name}</span>
+              <span className="nav-ulevel" style={{ fontSize: '.7rem' }}>⭐ {RANKS[rankIndex]}</span>
             </div>
           </div>
-          <button className="nav-ico" onClick={async () => { await supabase.auth.signOut(); }} title="Sair" style={{ fontSize: '14px' }}>🚪</button>
+          <button className="nav-ico" onClick={async () => { await supabase.auth.signOut(); }} title="Sair">🚪</button>
         </div>
       </header>
 
-      {/* PAGE */}
       <div className="page">
-        {/* ── LEFT COLUMN ── */}
         <aside className="left-col">
-          {/* Profile Card */}
           <div className="card profile-card">
             <div className="profile-banner"><div className="profile-banner-text">{userFaction.name} · ZONA DE GUERRA</div></div>
             <div className="profile-av-wrap">
               <div className="profile-av">{userName.charAt(0)}<div className="online-ring"></div></div>
-              <span className={`faction-badge ${userFaction.badgeClass}`}>⚔ {userFaction.name}</span>
             </div>
             <div className="profile-body">
               <div className="profile-name">{userName}</div>
-              <div className="profile-title">✦ {RANK_TITLES[rankIndex]} · Nível {rankIndex + 1}</div>
-              <div className="profile-bio">"Dominando o campo de batalha, um bunker de cada vez."</div>
-
-              <div className="xp-row"><span className="xp-label">⭐ Experiência</span><span className="xp-val">{xp} / 100 XP</span></div>
-              <div className="bar-track"><div className="bar-fill bar-xp" style={{ width: `${xp}%` }}></div></div>
-
-              <div className="xp-row"><span className="xp-label">⚡ Energia</span><span className="xp-val" style={{ color: '#4EA8DE' }}>{energy} / 100</span></div>
-              <div className="bar-track"><div className="bar-fill bar-energy" style={{ width: `${energy}%` }}></div></div>
-
+              <div className="profile-title">✦ {RANK_TITLES[rankIndex]}</div>
               <div className="stats-grid">
-                <div className="stat-box"><span className="stat-val">{actionLogs.filter(l => l.actor === userName && l.action_type === 'ATTACK').length}</span><span className="stat-key">Ataques</span></div>
-                <div className="stat-box"><span className="stat-val">{actionLogs.filter(l => l.actor === userName && l.action_type === 'DEFEND').length}</span><span className="stat-key">Defesas</span></div>
-                <div className="stat-box"><span className="stat-val">{actionLogs.filter(l => l.actor === userName && l.action_type === 'DEPLOY').length}</span><span className="stat-key">Bunkers</span></div>
-                <div className="stat-box"><span className="stat-val">{sp}</span><span className="stat-key">Skill Pts</span></div>
-                <div className="stat-box"><span className="stat-val">{posts.length}</span><span className="stat-key">Posts</span></div>
-                <div className="stat-box"><span className="stat-val" style={{ color: '#2ECC71' }}>{RANKS[rankIndex]}</span><span className="stat-key">Rank</span></div>
+                <div className="stat-box"><span className="stat-val">{energy}⚡</span><span className="stat-key">Energia</span></div>
+                <div className="stat-box"><span className="stat-val">{hp}%❤️</span><span className="stat-key">HP</span></div>
+                <div className="stat-box"><span className="stat-val">{xp}</span><span className="stat-key">XP</span></div>
+                <div className="stat-box"><span className="stat-val">{sp}</span><span className="stat-key">SP</span></div>
               </div>
-
-              <div className="karma-strip">
-                <span className="karma-icon">✨</span>
-                <div className="karma-info"><div className="karma-label">Karma Total</div><div className="karma-val">{xp + (rankIndex * 100)} pontos</div></div>
-                <span className="karma-tier">🔥 {rankIndex >= 3 ? 'Lendário' : rankIndex >= 1 ? 'Épico' : 'Raro'}</span>
-              </div>
-
-              <button className={`btn-outline ${sp > 0 ? 'btn-pulse' : ''}`} onClick={() => setShowSkills(true)}>🧬 Nexus Skills (SP: {sp})</button>
-              <button className="btn-vip" style={{ marginTop: '10px', width: '100%' }} onClick={() => setShowShop(true)}>💎 Pacote Especial (R$ 15)</button>
-            </div>
-          </div>
-
-          {/* Faction Selector */}
-          <div className="card">
-            <div className="ch"><span className="ch-title"><span className="dot-accent"></span>Alinhamento</span></div>
-            <div className="faction-picker">
-              {FACTIONS.map(f => (
-                <button key={f.id} className={`faction-btn ${userFaction.id === f.id ? 'selected' : ''}`} style={userFaction.id === f.id ? { borderColor: f.color, color: f.color, background: `${f.color}15` } : {}} onClick={() => setUserFaction(f)}>
-                  {f.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Achievements */}
-          <div className="card">
-            <div className="ch"><span className="ch-title"><span className="dot-accent"></span>Condecorações</span></div>
-            <div className="ach-list">
-              <div className="ach-item" style={{ opacity: actionLogs.filter(l => l.actor === userName && l.action_type === 'ATTACK').length >= 5 ? 1 : 0.35 }}>
-                <div className="ach-icon gold">💀</div>
-                <div className="ach-info"><div className="ach-name">Carrasco</div><div className="ach-desc">5+ ataques realizados</div></div>
-                <span className="ach-pts">+500 XP</span>
-              </div>
-              <div className="ach-item" style={{ opacity: actionLogs.filter(l => l.actor === userName && l.action_type === 'DEFEND').length >= 3 ? 1 : 0.35 }}>
-                <div className="ach-icon epic">🛡️</div>
-                <div className="ach-info"><div className="ach-name">Muralha</div><div className="ach-desc">3+ bunkers defendidos</div></div>
-                <span className="ach-pts">+350 XP</span>
-              </div>
-              <div className="ach-item" style={{ opacity: actionLogs.filter(l => l.actor === userName && l.action_type === 'DEPLOY').length >= 2 ? 1 : 0.35 }}>
-                <div className="ach-icon silver">🏗️</div>
-                <div className="ach-info"><div className="ach-name">Engenheiro</div><div className="ach-desc">2+ bunkers construídos</div></div>
-                <span className="ach-pts">+200 XP</span>
-              </div>
+              <button className="btn-outline" onClick={() => setShowSkills(true)}>🧬 NEXUS SKILLS</button>
             </div>
           </div>
         </aside>
 
-        {/* ── CENTER FEED ── */}
-        <main className="feed">
-          {/* Composer */}
-          <div className="composer">
-            <div className="comp-top">
-              <div className="comp-av">{userName.charAt(0)}</div>
-              <textarea className="comp-input" placeholder={`O que está acontecendo na zona de guerra, ${userName}? ⚔️`} value={newPostContent} onChange={e => setNewPostContent(e.target.value)} />
-            </div>
-            <div className="comp-footer">
-              <div className="comp-tools">
-                {themedWeapons.map(w => (
-                  <button key={w.id} className={`comp-tool ${selectedWeapon.id === w.id ? 'active' : ''}`} onClick={() => setSelectedWeapon(w)}>
-                    {w.icon} {w.name}
-                  </button>
-                ))}
+        <main className="main-col">
+          {/* INSTA STORIES (TOP PLAYERS) */}
+          <div className="stories-row mobile-only">
+            {MOCK_LEADERS.map(l => (
+              <div key={l.name} className="story-item" onClick={() => openUserProfile(l.name)}>
+                <div className="story-ring"><div className="story-av">{l.icon}</div></div>
+                <span className="story-name">{l.name.replace('GENERAL_', '')}</span>
               </div>
-              <button className="btn-post" disabled={energy < 10 || !newPostContent.trim()} onClick={handleDeploy}>🛡️ Fortificar (10⚡)</button>
-            </div>
+            ))}
+            {['TITAN', 'NEXUS', 'SQUAD'].map(name => (
+              <div key={name} className="story-item" onClick={() => openUserProfile(name)}>
+                <div className="story-ring"><div className="story-av">{name.charAt(0)}</div></div>
+                <span className="story-name">{name}</span>
+              </div>
+            ))}
           </div>
 
-          {/* Feed Tabs */}
           <div className="feed-tabs">
-            <button className="ftab active">✨ Todos</button>
-            <button className="ftab">🛡️ {userFaction.name}</button>
-            <button className="ftab">⚔️ PvP</button>
-            <button className="ftab">🔥 Em Alta</button>
+            <button className="nav-item active">✨ Feed</button>
+            <button className="nav-item">🛡️ Aliados</button>
+            <button className="nav-item">⚔️ Alvos</button>
+            <button className="nav-item">🔥 Em Alta</button>
           </div>
 
-          {/* Posts */}
-          {posts.map(post => {
-            const faction = FACTIONS.find(f => f.id === post.faction_id) || FACTIONS[0];
-            const isDead = post.hp === 0;
-            const postComments = comments.filter(c => c.post_id === post.id);
+          <div className="card mobile-only" style={{ marginBottom: 12 }}>
+             <form onSubmit={handleDeploy} style={{ display: 'flex', gap: 12 }}>
+                <div className="profile-av" style={{ width: 40, height: 40 }}>{userName.charAt(0)}</div>
+                <input className="post-input" placeholder={`O que houve, ${userName}?`} value={newPostContent} onChange={e => setNewPostContent(e.target.value)} />
+                <button className="btn-post" style={{ padding: '0 15px' }}>⚔️</button>
+             </form>
+          </div>
 
-            return (
-              <article key={post.id} id={`bunker-${post.id}`} className={`post ${shakeId === post.id ? 'shake-hard' : ''} ${isDead ? 'dead-post' : ''}`}>
-                {/* Faction Bar */}
-                <div className="post-guild-bar">
-                  <span className="guild-dot" style={{ background: faction.color }}></span>
-                  Facção: <strong style={{ color: faction.color }}>{faction.name}</strong>
-                  <span style={{ marginLeft: 'auto', color: 'var(--t3)' }}>{post.rank}</span>
-                </div>
-
-                {/* Header */}
+          <div className="post-feed">
+            {posts.map(post => (
+              <article key={post.id} className={`card post ${shakeId === post.id ? 'shake-hard' : ''}`} id={`bunker-${post.id}`}>
                 <div className="post-head">
-                  <div className="post-av" style={{ background: `linear-gradient(135deg, ${faction.color}44, ${faction.color})` }} onClick={() => openUserProfile(post.author)}>
-                    {post.author.charAt(0)}
-                  </div>
+                  <div className="post-av" onClick={() => openUserProfile(post.author)}>{post.author.charAt(0)}</div>
                   <div className="post-meta">
-                    <div className="post-meta-top">
-                      <span className="post-author" onClick={() => openUserProfile(post.author)}>@{post.author}</span>
-                      <span className={`chip ${faction.chipClass}`}>{faction.name}</span>
-                      <span className="chip chip-gold">⭐ {post.rank}</span>
-                    </div>
-                    <span className="post-time">⏱ {timeAgo(post.created_at)}</span>
+                    <span className="post-author">@{post.author}</span>
+                    <span className="post-time">{timeAgo(post.created_at)}</span>
                   </div>
                 </div>
-
-                {/* Content */}
-                <div className="post-body">
-                  {isDead ? <span className="glitch-text">SISTEMA COMPROMETIDO // BUNKER NEUTRALIZADO</span> : post.content}
-                </div>
-
-                {/* HP Bar */}
+                <div className="post-body">{post.content}</div>
                 <div className="bunker-hp">
-                  <div className="hp-row">
-                    <span>INTEGRIDADE: {post.hp}%</span>
-                    {post.shields > 0 && <span className="shield-count">🛡️ Escudo: {post.shields}</span>}
-                  </div>
-                  <div className="bar-track">
-                    <div className={`bar-fill ${post.hp > 30 ? 'bar-hp' : 'bar-danger'}`} style={{ width: `${post.hp}%` }}></div>
-                  </div>
+                   <div className="hp-row"><span>ESTADO: {post.hp}%</span> {post.shields > 0 && <span>🛡️ x{post.shields}</span>}</div>
+                   <div className="bar-track"><div className={`bar-fill ${post.hp > 30 ? 'bar-hp' : 'bar-danger'}`} style={{ width: `${post.hp}%` }}></div></div>
                 </div>
-
-                {/* Actions */}
-                <hr className="post-divider" />
                 <div className="post-actions">
-                  <button className="post-action def" onClick={() => handleShield(post.id, post)} disabled={isDead}>
-                    🛡️ Defender <span className="cnt">{calculateCost(5, 'DEFENSE')}⚡</span>
-                  </button>
-                  <button className="post-action atk" onClick={e => handleAttack(e, post.id, post)} disabled={isDead}>
-                    {themedWeapons.find(w => w.id === selectedWeapon.id)?.icon || selectedWeapon.icon} Atacar <span className="cnt">{calculateCost(selectedWeapon.cost, selectedWeapon.special ? 'TACTICAL' : 'ATTACK')}⚡</span>
-                  </button>
-                  <button className="post-action com">💬 <span className="cnt">{postComments.length}</span></button>
+                  <button className="post-action atk" onClick={e => handleAttack(e, post.id, post)}>{selectedWeapon.icon} Atacar</button>
+                  <button className="post-action def" onClick={() => handleShield(post.id, post)}>🛡️ Defender</button>
+                  <button className="post-action com">💬 {comments.filter(c => c.post_id === post.id).length}</button>
                 </div>
-
-                {/* Comments */}
-                {postComments.length > 0 && (
-                  <div className="comments-section">
-                    <h4>💬 Transmissões</h4>
-                    {postComments.map(c => (
-                      <div key={c.id} className="comment-item">
-                        <span className="comment-author" onClick={() => openUserProfile(c.author)}>@{c.author}</span>
-                        <span className="comment-text">{c.content}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {!isDead && (
-                  <form onSubmit={e => handleComment(e, post.id)} className="comments-section" style={{ paddingTop: postComments.length > 0 ? 0 : undefined }}>
-                    <div className="comment-form">
-                      <input className="comment-input" type="text" placeholder="Responder transmissão..." value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))} />
-                      <button type="submit" className="comment-send" disabled={!commentInputs[post.id]}>Enviar</button>
-                    </div>
-                  </form>
-                )}
+                <div className="comments-section">
+                   {comments.filter(c => c.post_id === post.id).slice(-2).map(c => (
+                     <div key={c.id} className="comment-item"><strong>@{c.author}</strong> {c.content}</div>
+                   ))}
+                   <form onSubmit={e => handleComment(e, post.id)} className="comment-form">
+                     <input className="comment-input" placeholder="Responder..." value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))} />
+                   </form>
+                </div>
               </article>
-            );
-          })}
-
-          {posts.length === 0 && (
-            <div className="card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <p style={{ fontSize: '2rem', marginBottom: '12px' }}>🏜️</p>
-              <p style={{ color: 'var(--t3)', fontWeight: 700 }}>Zona silenciosa. Construa o primeiro bunker!</p>
-            </div>
-          )}
+            ))}
+          </div>
         </main>
 
-        {/* ── RIGHT COLUMN ── */}
         <aside className="right-col">
-          {/* Combat Radar */}
           <div className="card">
-            <div className="ch">
-              <span className="ch-title"><span className="dot-accent" style={{ animation: 'pulse 1s infinite' }}></span>Radar de Combate</span>
-              <span className="ch-action">AO VIVO</span>
-            </div>
-            <div className="radar-list">
-              {actionLogs.length === 0 && <p style={{ fontSize: '.82rem', color: 'var(--t3)', padding: '16px', textAlign: 'center' }}>Mapeando zona de guerra...</p>}
+            <div className="ch"><span className="ch-title">📡 Radar Combat</span></div>
+            <div className="radar-list" style={{ maxHeight: 300, overflowY: 'auto' }}>
               {actionLogs.map(log => (
-                <div key={log.id} className={`radar-item type-${log.action_type.toLowerCase()}`}>
-                  <span className="radar-actor" onClick={() => openUserProfile(log.actor)}>@{log.actor}</span>{' '}
-                  <span className="radar-detail">{log.details}</span>
-                  <div className="radar-time">{new Date(log.created_at).toLocaleTimeString()}</div>
+                <div key={log.id} style={{ fontSize: '.75rem', marginBottom: 8 }}>
+                  <strong>@{log.actor}</strong> {log.details}
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Arsenal */}
-          <div className="card">
-            <div className="ch"><span className="ch-title"><span className="dot-accent"></span>Arsenal Temático</span><span className="ch-action">{themedWeapons.find(w => w.id === selectedWeapon.id)?.name}</span></div>
-            <div className="arsenal-grid">
-              {themedWeapons.map(w => (
-                <button key={w.id} className={`weapon-btn ${selectedWeapon.id === w.id ? 'selected' : ''}`} onClick={() => setSelectedWeapon(w)}>
-                  <span className="weapon-icon">{w.icon}</span>
-                  <div className="weapon-info"><div className="weapon-name">{w.name}</div><div className="weapon-stats">{w.desc}</div></div>
-                  <span className="weapon-cost">{calculateCost(w.cost, w.special ? 'TACTICAL' : 'ATTACK')}⚡</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Ranking */}
-          <div className="card">
-            <div className="ch"><span className="ch-title"><span className="dot-accent"></span>Ranking</span><span className="ch-action">Semanal</span></div>
-            <div className="ranking-list">
-              {MOCK_LEADERS.map((l, i) => (
-                <div key={l.name} className="rank-item">
-                  <span className={`rank-pos ${i === 0 ? 'gold-pos' : i === 1 ? 'silver-pos' : 'bronze-pos'}`}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-                  <div className="rank-av" style={{ background: 'var(--surface)' }}>{l.icon}</div>
-                  <div className="rank-info"><div className="rank-name">{l.name}</div><div className="rank-sub">{l.rank}</div></div>
-                  <span className="rank-score">{l.points.toLocaleString()}</span>
-                </div>
-              ))}
-              <div className="rank-item me">
-                <span className="rank-pos normal-pos" style={{ color: 'var(--gold)', fontWeight: 900 }}>#7</span>
-                <div className="rank-av" style={{ background: 'linear-gradient(135deg, var(--orange), var(--gold))' }}>{userName.charAt(0)}</div>
-                <div className="rank-info"><div className="rank-name" style={{ color: 'var(--gold)' }}>{userName} (você)</div><div className="rank-sub">{RANKS[rankIndex]}</div></div>
-                <span className="rank-score">{xp + rankIndex * 100}</span>
+          <div className="card" style={{ marginTop: 12 }}>
+            <div className="ch"><span className="ch-title">🏆 Ranking Elite</span></div>
+            {MOCK_LEADERS.map((l, i) => (
+              <div key={i} className="rank-item" style={{ padding: '8px 0' }}>
+                <span>#{i+1}</span> <strong>@{l.name}</strong> <span style={{ marginLeft: 'auto', color: 'var(--gold)' }}>{l.points}</span>
               </div>
-            </div>
-          </div>
-
-          {/* Events */}
-          <div className="card">
-            <div className="ch"><span className="ch-title"><span className="dot-accent"></span>Próximos Eventos</span></div>
-            <div className="event-list">
-              <div className="event-item">
-                <div><div className="ev-day">31</div><div className="ev-mon">Mar</div></div>
-                <div className="event-info"><div className="ev-name">Assalto ao Nexus</div><div className="ev-sub">Raid · 25 heróis · 20h</div></div>
-                <span className="ev-type" style={{ background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid rgba(231,76,60,.3)' }}>Raid</span>
-              </div>
-              <div className="event-item">
-                <div><div className="ev-day">02</div><div className="ev-mon">Abr</div></div>
-                <div className="event-info"><div className="ev-name">Torneio PvP</div><div className="ev-sub">Arena · Arma Épica</div></div>
-                <span className="ev-type" style={{ background: 'var(--blue-dim)', color: 'var(--blue)', border: '1px solid rgba(78,168,222,.3)' }}>PvP</span>
-              </div>
-              <div className="event-item">
-                <div><div className="ev-day">05</div><div className="ev-mon">Abr</div></div>
-                <div className="event-info"><div className="ev-name">Festival Tático</div><div className="ev-sub">Mundial · Recompensas Raras</div></div>
-                <span className="ev-type" style={{ background: 'rgba(255,185,50,.1)', color: 'var(--gold)', border: '1px solid rgba(255,185,50,.3)' }}>World</span>
-              </div>
-            </div>
+            ))}
           </div>
         </aside>
       </div>
 
-      {/* 🕹️ MOBILE HUD (BOTTOM BAR) */}
       <nav className="mobile-nav">
-        <div className="mod-stat" style={{ textAlign: 'center' }}>
-          <div style={{ color: 'var(--red)', fontSize: '1.2rem', fontWeight: 900 }}>{hp}%</div>
-          <div style={{ fontSize: '0.6rem', color: 'var(--t3)', textTransform: 'uppercase' }}>Vitalidade</div>
-        </div>
-        <div className="mod-stat" style={{ textAlign: 'center' }}>
-          <div style={{ color: 'var(--blue)', fontSize: '1.2rem', fontWeight: 900 }}>{energy}</div>
-          <div style={{ fontSize: '0.6rem', color: 'var(--t3)', textTransform: 'uppercase' }}>Energia</div>
-        </div>
-        <div className="mod-stat" style={{ textAlign: 'center' }} onClick={() => setShowSkills(true)}>
-          <div style={{ color: 'var(--gold)', fontSize: '1.2rem' }}>{selectedWeapon.icon}</div>
-          <div style={{ fontSize: '0.6rem', color: 'var(--gold)', textTransform: 'uppercase', fontWeight: 700 }}>Arsenal</div>
-        </div>
+        <div className="nav-icon-btn active"><span className="nav-icon">🏚️</span><span className="nav-label">Home</span></div>
+        <div className="nav-icon-btn" onClick={() => setShowSkills(true)}><span className="nav-icon">📡</span><span className="nav-label">Radar</span></div>
+        <div className="nav-compose" onClick={() => document.querySelector<HTMLInputElement>('.post-input')?.focus()}><span>+</span></div>
+        <div className="nav-icon-btn" onClick={() => setShowSkills(true)}><span className="nav-icon">⚔️</span><span className="nav-label">Arsenal</span></div>
+        <div className="nav-icon-btn" onClick={() => setSelectedUser(userName)}><span className="nav-icon">👤</span><span className="nav-label">Perfil</span></div>
       </nav>
 
-      {/* ── PROFILE MODAL ── */}
+      {/* MODALS */}
       {selectedUser && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setSelectedUser(null); }}>
-          <div className="modal-panel" style={{ textAlign: 'center' }}>
-            <div className="profile-av" style={{ width: 80, height: 80, fontSize: '2rem', margin: '0 auto 16px', border: '3px solid var(--gold)' }}>
-              {selectedUser.charAt(0)}
-            </div>
-            <h2>@{selectedUser}</h2>
-            <p className="modal-subtitle">MERCENÁRIO VETERANO</p>
+        <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
+          <div className="modal-panel" onClick={e => e.stopPropagation()}>
+            <div className="profile-av" style={{ width: 80, height: 80, margin: '0 auto 16px' }}>{selectedUser.charAt(0)}</div>
+            <h2 style={{ textAlign: 'center' }}>@{selectedUser}</h2>
             <div className="modal-stats">
-              <div className="modal-stat"><div className="modal-stat-val" style={{ color: 'var(--red)' }}>{selectedUserStats.attacks}</div><div className="modal-stat-key">Ataques</div></div>
-              <div className="modal-stat"><div className="modal-stat-val" style={{ color: 'var(--green)' }}>{selectedUserStats.defends}</div><div className="modal-stat-key">Defesas</div></div>
-              <div className="modal-stat"><div className="modal-stat-val" style={{ color: 'var(--gold)' }}>{selectedUserStats.drops}</div><div className="modal-stat-key">Bunkers</div></div>
+               <div className="modal-stat"><div>{selectedUserStats.attacks}</div><span>Ataques</span></div>
+               <div className="modal-stat"><div>{selectedUserStats.defends}</div><span>Defesas</span></div>
             </div>
-            <h4 style={{ textAlign: 'left', marginBottom: 12, color: 'var(--t2)', fontSize: '.85rem' }}>🏅 Condecorações</h4>
-            <div className="modal-medals">
-              <div className={`modal-medal ${selectedUserStats.attacks >= 5 ? 'earned' : 'locked'}`}><div className="modal-medal-icon">💀</div><div className="modal-medal-name">Carrasco</div></div>
-              <div className={`modal-medal ${selectedUserStats.defends >= 3 ? 'earned' : 'locked'}`}><div className="modal-medal-icon">🛡️</div><div className="modal-medal-name">Muralha</div></div>
-              <div className={`modal-medal ${selectedUserStats.drops >= 2 ? 'earned' : 'locked'}`}><div className="modal-medal-icon">🏗️</div><div className="modal-medal-name">Engenheiro</div></div>
+            <div className="skin-selector" style={{ marginTop: 20 }}>
+               <button className={`skin-btn ${currentSkin === 'default' ? 'active' : ''}`} onClick={() => setCurrentSkin('default')}>🚀 Scifi</button>
+               <button className={`skin-btn ${currentSkin === 'brasil' ? 'active' : ''}`} onClick={() => setCurrentSkin('brasil')}>🇧🇷 Brasil</button>
             </div>
-            
-            <h4 style={{ textAlign: 'left', marginBottom: 12, color: 'var(--t2)', fontSize: '.85rem' }}>🎭 Personalizar Skin (Temas)</h4>
-            <div className="skin-selector">
-              {[
-                { id: 'default', name: 'Scifi', icon: '🚀' },
-                { id: 'brasil', name: 'Brasil', icon: '🇧🇷' },
-              ].map(skin => (
-                <button 
-                  key={skin.id} 
-                  className={`skin-btn ${currentSkin === skin.id ? 'active' : ''}`}
-                  onClick={() => setCurrentSkin(skin.id)}
-                >
-                  <span style={{ fontSize: '1.2rem' }}>{skin.icon}</span>
-                  <span style={{ fontSize: '0.65rem' }}>{skin.name}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="modal-actions">
-              <button className="modal-btn modal-btn-primary">🤝 Formar Aliança</button>
-              <button className="modal-btn modal-btn-ghost" onClick={() => setSelectedUser(null)}>Fechar</button>
-            </div>
+            <button className="modal-btn modal-btn-ghost" onClick={() => setSelectedUser(null)} style={{ width: '100%', marginTop: 20 }}>Fechar</button>
           </div>
         </div>
       )}
 
-      {/* ── SKILLS MODAL ── */}
       {showSkills && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowSkills(false); }}>
-          <div className="modal-panel">
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <h2>🧬 THE NEXUS</h2>
-              <p className="modal-subtitle">Terminal de Implantes Neurais de Guerra</p>
-              <div style={{ color: 'var(--gold)', fontFamily: "'Rajdhani', sans-serif", fontSize: '2.5rem', fontWeight: 900, margin: '16px 0 4px' }}>{sp}</div>
-              <p style={{ color: 'var(--t3)', fontSize: '.8rem', fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase' }}>Skill Points Disponíveis</p>
-            </div>
+        <div className="modal-overlay" onClick={() => setShowSkills(false)}>
+          <div className="modal-panel" onClick={e => e.stopPropagation()}>
+            <h2 style={{ textAlign: 'center' }}>🧬 NEXUS</h2>
+            <p style={{ textAlign: 'center', color: 'var(--gold)', fontSize: '2rem', fontWeight: 900 }}>{sp} SP</p>
             <div className="skill-grid">
-              <div className={`skill-node ${unlockedSkills.includes('regen') ? 'unlocked' : ''}`} onClick={() => buySkill('regen', 1)}>
-                <div className="skill-node-icon">⚡</div><div className="skill-node-name">Regen Rápido</div>
-                <div className="skill-node-desc">Energia regenera 2x mais rápido</div>
-                <div className="skill-node-cost">{unlockedSkills.includes('regen') ? '✅ Ativo' : '1 SP'}</div>
-              </div>
-              <div className={`skill-node ${unlockedSkills.includes('efficiency') ? 'unlocked' : ''}`} onClick={() => buySkill('efficiency', 1)}>
-                <div className="skill-node-icon">🎯</div><div className="skill-node-name">Eficiência</div>
-                <div className="skill-node-desc">Ataques custam -1 energia</div>
-                <div className="skill-node-cost">{unlockedSkills.includes('efficiency') ? '✅ Ativo' : '1 SP'}</div>
-              </div>
-              <div className={`skill-node ${unlockedSkills.includes('aegis') ? 'unlocked' : ''}`} onClick={() => buySkill('aegis', 2)}>
-                <div className="skill-node-icon">🛡️</div><div className="skill-node-name">Aegis</div>
-                <div className="skill-node-desc">Bunkers nascem com 1 escudo</div>
-                <div className="skill-node-cost">{unlockedSkills.includes('aegis') ? '✅ Ativo' : '2 SP'}</div>
-              </div>
-              <div className={`skill-node ${unlockedSkills.includes('firepower') ? 'unlocked' : ''}`} onClick={() => buySkill('firepower', 2)}>
-                <div className="skill-node-icon">🔥</div><div className="skill-node-name">Firepower</div>
-                <div className="skill-node-desc">+5 dano em todos os ataques</div>
-                <div className="skill-node-cost">{unlockedSkills.includes('firepower') ? '✅ Ativo' : '2 SP'}</div>
-              </div>
-              <div className={`skill-node ${unlockedSkills.includes('nano') ? 'unlocked' : ''}`} onClick={() => buySkill('nano', 3)}>
-                <div className="skill-node-icon">💚</div><div className="skill-node-name">Nano Heal</div>
-                <div className="skill-node-desc">Defender cura 25 HP em vez de 10</div>
-                <div className="skill-node-cost">{unlockedSkills.includes('nano') ? '✅ Ativo' : '3 SP'}</div>
-              </div>
-              <div className="skill-node" style={{ opacity: 0.3 }}>
-                <div className="skill-node-icon">🔮</div><div className="skill-node-name">???</div>
-                <div className="skill-node-desc">Desbloqueie no nível GENERAL</div>
-                <div className="skill-node-cost">🔒</div>
-              </div>
+               <div className={`skill-node card ${unlockedSkills.includes('regen') ? 'active' : ''}`} onClick={() => buySkill('regen', 1)}>⚡ Regen</div>
+               <div className={`skill-node card ${unlockedSkills.includes('firepower') ? 'active' : ''}`} onClick={() => buySkill('firepower', 2)}>🔥 Fúria</div>
             </div>
-            <button className="btn-outline" onClick={() => setShowSkills(false)} style={{ marginTop: 20 }}>Fechar Nexus</button>
+            <button className="modal-btn modal-btn-ghost" onClick={() => setShowSkills(false)} style={{ width: '100%', marginTop: 20 }}>Fechar</button>
           </div>
         </div>
       )}
-      {/* ── SHOP MODAL ── */}
+
       {showShop && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowShop(false); }}>
-          <div className="modal-panel shop-panel">
-            <div className="shop-header">
-              <div className="shop-badge">OFERTA LIMITADA</div>
-              <h2>💎 PACOTE LENDÁRIO</h2>
-              <p className="modal-subtitle">Evolua sua estética para o nível máximo</p>
-            </div>
-
-            <div className="package-card">
-              <div className="package-preview">
-                <div className="skin-orb gold-glow">
-                  <span>⚔️</span>
-                </div>
-                <div className="package-content">
-                  <h3>Skin Pack: Lorde Supremo</h3>
-                  <ul>
-                    <li>✨ Aura Dourada Exclusiva</li>
-                    <li>🛡️ Escudo de Plasma Visual</li>
-                    <li>💥 Efeito de Explosão "Supernova"</li>
-                    <li>👑 Título: "O Magnata da Guerra"</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="package-buy-zone">
-                <div className="price-tag">
-                  <span className="currency">R$</span>
-                  <span className="amount">15</span>
-                  <span className="cents">,00</span>
-                </div>
-                <button className="btn-buy-vip" onClick={() => alert('Integrando com Gateway de Pagamento...')}>
-                  ADQUIRIR AGORA
-                </button>
-              </div>
-            </div>
-
-            <p className="shop-footer">Pagamento único. Benefícios visuais permanentes.</p>
-            <button className="btn-outline" onClick={() => setShowShop(false)} style={{ marginTop: 20 }}>Voltar ao Bunker</button>
+        <div className="modal-overlay" onClick={() => setShowShop(false)}>
+          <div className="modal-panel shop-panel" onClick={e => e.stopPropagation()}>
+             <h2>💎 MERCADO NEGRO</h2>
+             <div className="card" style={{ padding: 20, border: '1px solid var(--gold)', marginTop: 20 }}>
+                <h3>PACK SUPREMO</h3>
+                <p>Skin Brasil + 50 SP + Rank VIP</p>
+                <button className="btn-buy-vip" style={{ width: '100%', marginTop: 12 }}>ADQUIRIR R$ 15,00</button>
+             </div>
+             <button className="modal-btn modal-btn-ghost" onClick={() => setShowShop(false)} style={{ width: '100%', marginTop: 20 }}>Fechar</button>
           </div>
         </div>
       )}
+
+      {explosions.map(ex => <div key={ex.id} className="explosion-ring" style={{ left: ex.x, top: ex.y }} />)}
+      {projectiles.map(p => <div key={p.id} className="projectile" style={{ left: p.startX, top: p.startY }} />)}
     </>
   );
 }
-

@@ -397,61 +397,123 @@ body {
 .faction-btn.selected{border-width:2px}
 
 /* RESPONSIVE */
+/* 📸 INSTAGRAM-STYLE MOBILE LAYOUT (768px-) */
 @media (max-width: 768px) {
   .top-bar {
-    padding: 8px 12px;
-    gap: 15px;
+    height: 60px;
+    padding: 0 16px;
+    flex-direction: row; /* Keep logo and icons on same line */
     justify-content: space-between;
+    align-items: center;
+    background: rgba(13, 17, 23, 0.9);
+    border-bottom: 0.5px solid var(--border);
   }
   
-  .search-wrap { display: none; } /* Hide search to save space */
-  
-  .nav-tabs {
-    flex: 1;
-    overflow-x: auto;
-    gap: 4px;
-    padding-bottom: 0;
-    border: none;
-    justify-content: flex-start;
+  .top-bar::before {
+    content: 'WAR SOCIAL';
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: var(--gold);
+    letter-spacing: 1px;
   }
-  
-  .nav-item { padding: 8px 12px; font-size: 0.8rem; }
-  .user-nav { display: none; }
+
+  .nav-tabs, .search-wrap, .user-nav { display: none !important; }
 
   .page {
-    padding: 80px 8px 100px 8px;
+    padding: 60px 0 80px 0; /* No side padding for stories */
   }
 
-  .left-col, .right-col { display: none; }
+  /* 💎 SQUAD STORIES (TOP RANKINGS) */
+  .stories-row {
+    display: flex;
+    overflow-x: auto;
+    padding: 12px 16px;
+    gap: 16px;
+    scrollbar-width: none;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 8px;
+    background: var(--surface);
+  }
+  .stories-row::-webkit-scrollbar { display: none; }
+  
+  .story-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 68px;
+  }
+  .story-ring {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(45deg, var(--gold), var(--accent));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .story-av {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #000;
+    border: 2px solid var(--surface);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+  }
+  .story-name { font-size: 0.65rem; color: var(--t2); font-weight: 600; text-transform: uppercase; }
 
-  h1 { font-size: 1.3rem; }
-  .card { margin-bottom: 12px; padding: 12px; }
+  /* 📋 INSTA-FEED POSTS */
+  .card {
+    border-radius: 0;
+    border-left: none; border-right: none;
+    margin-bottom: 12px;
+    background: var(--surface);
+    padding: 16px;
+  }
+
+  /* 🕹️ NEW PREMIUM BOTTOM NAV */
+  .mobile-nav {
+    height: 60px;
+    background: rgba(13, 17, 23, 0.98);
+    border-top: 0.5px solid var(--border);
+    justify-content: space-around;
+    padding: 0 5px;
+  }
+
+  .nav-icon-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--t3);
+    gap: 4px;
+    flex: 1;
+    transition: 0.2s;
+  }
+  .nav-icon-btn.active { color: #fff; }
+  .nav-icon { font-size: 1.5rem; }
+  .nav-label { font-size: 0.6rem; text-transform: uppercase; font-weight: 700; }
+
+  /* Center "Compose" Button */
+  .nav-compose {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--gold), var(--accent));
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.8rem;
+    color: #000;
+    margin-top: -30px;
+    box-shadow: 0 4px 15px rgba(255, 184, 50, 0.4);
+    border: 3px solid var(--bg);
+  }
 }
-
-/* 🕹️ MOBILE HUD (BOTTOM BAR) */
-.mobile-nav {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 70px;
-  background: rgba(13, 17, 23, 0.95);
-  border-top: 1px solid var(--border);
-  z-index: 2000;
-  display: flex !important;
-  justify-content: space-around;
-  align-items: center;
-  padding: 0 10px;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 -5px 25px rgba(0,0,0,0.5);
-}
-
-.mod-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-@media (min-width: 769px) { .mobile-nav { display: none !important; } }
 
 /* Ensure Feed takes full width on mobile */
 .main-col {
@@ -484,15 +546,6 @@ button:active, .nav-item:active, .comp-tool:active, .weapon-btn:active, .skin-bt
   z-index: 1000;
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
-@media (max-width: 768px) {
-  .top-bar {
-    height: auto;
-    padding: 12px;
-    flex-direction: column;
-    gap: 15px;
-  }
 }
 
 .search-wrap { 
@@ -926,5 +979,77 @@ button:active, .nav-item:active, .comp-tool:active, .weapon-btn:active, .skin-bt
 .modal-btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--t3); }
 .modal-btn-ghost:hover { border-color: var(--t2); color: #fff; }
 
-/* 🎨 THEME SPECIFIC ORNAMENTS */
-[data-theme="brasil"] .card::before { content: '🐆'; position: absolute; top: 12px; right: 12px; opacity: 0.15; font-size: 2.2rem; pointer-events: none; }
+/* 📸 FINAL RESPONSIVE OVERRIDES (MOBILE FIRST) */
+.mobile-nav, .mobile-only { display: none !important; }
+
+@media (max-width: 768px) {
+  .desktop-only, .left-col, .right-col { display: none !important; }
+  .mobile-only { display: flex !important; }
+  
+  .page {
+    padding: 64px 0 80px !important;
+    display: block !important;
+  }
+  
+  .main-col {
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 💎 SQUAD STORIES */
+  .stories-row {
+    display: flex !important;
+    overflow-x: auto;
+    padding: 12px 16px;
+    gap: 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+  }
+
+  /* 🕹️ INSTA BOTTOM NAV */
+  .mobile-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 60px;
+    background: rgba(13, 17, 23, 0.98);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 2000;
+  }
+
+  .nav-icon-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--t3);
+    gap: 4px;
+    flex: 1;
+  }
+  .nav-icon-btn.active { color: var(--gold); }
+  .nav-icon { font-size: 1.4rem; }
+  .nav-label { font-size: 0.6rem; text-transform: uppercase; font-weight: 700; }
+
+  .nav-compose {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--gold), var(--accent));
+    border-radius: 12px;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.8rem; color: #000;
+    margin-top: -30px;
+    box-shadow: 0 4px 15px rgba(255, 184, 50, 0.4);
+    border: 3px solid var(--bg);
+  }
+
+  /* Post Cards Insta-style */
+  .post-card, .card {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    margin-bottom: 8px !important;
+  }
+}
