@@ -25,7 +25,6 @@ export default function App() {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -81,9 +80,13 @@ export default function App() {
   };
 
   const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault(); setAuthError('');
+    e.preventDefault();
     const { error } = isSignUp ? await supabase.auth.signUp({ email, password }) : await supabase.auth.signInWithPassword({ email, password });
-    if (error) setAuthError(error.message);
+    if (error) {
+      addToast('⚠️', 'Acesso Negado', error.message);
+    } else {
+      addToast('🔓', 'Autenticação', 'Acesso autorizado ao HUD Tático.');
+    }
   };
 
   const handleDeploy = async (e?: React.FormEvent) => {
@@ -119,22 +122,6 @@ export default function App() {
 
   if (loadingAuth) return <div className="loading-wrap" style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}><h2>INICIALIZANDO HUD...</h2></div>;
 
-  if (!session) return (
-    <div className="auth-overlay" style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--ink)' }}>
-      <div className="panel" style={{ padding: 40, width: 400, textAlign: 'center' }}>
-        <div className="logo-emblem" style={{ margin: '0 auto 20px', width: 60, height: 60, fontSize: 30 }}>⚔️</div>
-        <h2 className="logo-name" style={{ marginBottom: 30, fontSize: '3rem' }}>WarSocial</h2>
-        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <input className="comp-ta" style={{ height: 44, padding: '0 16px' }} placeholder="Endereço de E-mail" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className="comp-ta" style={{ height: 44, padding: '0 16px' }} type="password" placeholder="Chave de Acesso" value={password} onChange={e => setPassword(e.target.value)} required />
-          {authError && <p style={{ color: 'var(--fire)', fontSize: '0.8rem' }}>{authError}</p>}
-          <button className="btn-post" style={{ width: '100%', height: 44, justifyContent: 'center' }}>{isSignUp ? 'ALISTAR' : 'AUTENTICAR'}</button>
-        </form>
-        <p onClick={() => setIsSignUp(!isSignUp)} style={{ marginTop: 24, cursor: 'pointer', color: 'var(--tx3)', fontSize: '0.8rem' }}>{isSignUp ? 'Já tem conta? Retornar ao Login' : 'Novo recruta? Iniciar Alistamento'}</p>
-      </div>
-    </div>
-  );
-
   return (
     <>
       <div className="scanline"></div>
@@ -150,6 +137,85 @@ export default function App() {
         ))}
       </div>
 
+      {!session ? (
+        <div className="landing-wrap">
+          <div className="landing-content">
+            
+            <div className="landing-copy">
+              <h1 className="l-title">O PRIMEIRO <span className="l-acc">FRONT<br/> DE BATALHA</span> SOCIAL.</h1>
+              <p className="l-sub">No <strong>WarSocial</strong>, sua rede não é um mural de fotos, é um simulador de combate e estratégia. Crie sua guilda, utilize ataques para descer a integridade de rivais ou reforce aliados para ganhar Karma. Sobreviva, evolua e escreva sua história neste ecossistema gamificado.</p>
+              
+              <div className="l-features">
+                <div className="l-feat">
+                  <span className="l-feat-ico">⚔️</span>
+                  <div>
+                    <h3 className="l-feat-h">Combate Social em Tempo Real</h3>
+                    <p className="l-feat-p">Todo post possui HP (Saúde) e pode ser atacado ou defendido pela comunidade. Escolha o seu lado do fogo cruzado.</p>
+                  </div>
+                </div>
+                <div className="l-feat">
+                  <span className="l-feat-ico">🏆</span>
+                  <div>
+                    <h3 className="l-feat-h">Karma & Gamificação</h3>
+                    <p className="l-feat-p">Receba XP baseado em atos valiosos. Seja impiedoso ou curandeiro e veja seu status se solidificar nos Rankings.</p>
+                  </div>
+                </div>
+                <div className="l-feat">
+                  <span className="l-feat-ico">🛡️</span>
+                  <div>
+                    <h3 className="l-feat-h">Guerra de Guildas</h3>
+                    <p className="l-feat-p">Uma guilda fragmentada cai rápido. Convide recrutas, coordene ataques no Radar Tático e monopolize o feed.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="landing-form-box">
+              <div className="panel" style={{ padding: 40, textAlign: 'center' }}>
+                <div className="logo-emblem" style={{ margin: '0 auto 20px', width: 64, height: 64, fontSize: 32 }}>⚔️</div>
+                <h2 className="logo-name" style={{ marginBottom: 30, fontSize: '3rem' }}>WarSocial</h2>
+                <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <input className="auth-input" placeholder="Endereço de E-mail" value={email} onChange={e => setEmail(e.target.value)} required />
+                  <input className="auth-input" type="password" placeholder="Chave de Acesso" value={password} onChange={e => setPassword(e.target.value)} required />
+                  <button className="btn-post" style={{ width: '100%', height: 48, justifyContent: 'center', fontSize: '1.2rem', marginTop: 8 }}>{isSignUp ? 'CONCLUIR ALISTAMENTO' : 'ACESSAR HUD TÁTICO'}</button>
+                </form>
+                <p onClick={() => setIsSignUp(!isSignUp)} style={{ marginTop: 28, cursor: 'pointer', color: 'var(--tx3)', fontSize: '0.9rem', fontWeight: 600 }}>{isSignUp ? 'Já tem conta? Retorne ao painel' : 'Novo recruta? Inicie seu Alistamento'}</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      ) : (
+        <>
+
+
+      <aside className="tactical-rail">
+        <div className="rail-user">
+          <div className="rail-av">{userName.charAt(0)}<div className="rail-av-on"></div></div>
+          <div className="rail-uinfo">
+            <div style={{color: 'var(--tx)', fontFamily:'Bebas Neue', fontSize:'1.2rem', letterSpacing:'1px'}}>{userName}</div>
+            <div style={{color:'var(--gold)', fontFamily:'Barlow Condensed', fontSize:'0.75rem', fontWeight:800}}>⭐ LVL {Math.floor(xp/1000)} · {RANKS[rankIndex]}</div>
+          </div>
+        </div>
+
+        <div className="rail-item active"><span className="rail-ico">🏠</span><span className="rail-lb">FEED TÁTICO</span></div>
+        <div className="rail-item"><span className="rail-ico">👥</span><span className="rail-lb">GUILDAS</span></div>
+        <div className="rail-item"><span className="rail-ico">⚔️</span><span className="rail-lb">BATALHAS</span></div>
+        <div className="rail-item"><span className="rail-ico">🏆</span><span className="rail-lb">RANKING</span></div>
+
+        <div style={{ marginTop: '20px', borderTop: '1px solid var(--rim)', paddingTop: '20px', width: '100%' }}>
+          <div className="rail-item"><div className="rail-ico" style={{position:'relative'}}>✉️<span className="rail-badge">5</span></div><span className="rail-lb">MENSAGENS</span></div>
+          <div className="rail-item"><div className="rail-ico" style={{position:'relative'}}>🔔<span className="rail-badge">12</span></div><span className="rail-lb">ALERTAS</span></div>
+          <div className="rail-item"><div className="rail-ico" style={{color:'#ff4444', fontSize:'14px'}}>🔴</div><span className="rail-lb" style={{color:'#ff4444', fontWeight:800}}>TRANSMISSÃO LIVE</span></div>
+        </div>
+
+        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--rim)', width: '100%' }}>
+          <div className="rail-item" onClick={async () => await supabase.auth.signOut()}>
+            <span className="rail-ico">🚪</span><span className="rail-lb">LOGOUT</span>
+          </div>
+        </div>
+      </aside>
+
       <header className="topnav">
         <div className="logo">
           <div className="logo-emblem">⚔️</div>
@@ -160,23 +226,8 @@ export default function App() {
           <span className="sico">🔍</span>
           <input type="text" placeholder="Buscar heróis, guildas, batalhas..." />
         </div>
-        <nav className="nav-links">
-          <button className="nlink active">🏠 Feed</button>
-          <button className="nlink">👥 Guildas</button>
-          <button className="nlink">⚔️ Batalhas</button>
-          <button className="nlink">🏆 Ranking</button>
-        </nav>
         <div className="nav-r">
-          <div className="live-pill"><div className="live-dot"></div>LIVE</div>
-          <button className="nico">✉️<span className="nbadge">5</span></button>
-          <button className="nico">🔔<span className="nbadge">12</span></button>
-          <div className="nav-user" onClick={async () => await supabase.auth.signOut()}>
-            <div className="nav-av">{userName.charAt(0)}<div className="nav-av-online"></div></div>
-            <div>
-              <div className="nav-uname">{userName}</div>
-              <div className="nav-ulvl">⭐ LVL {Math.floor(xp/1000)} · {RANKS[rankIndex]}</div>
-            </div>
-          </div>
+          {/* TOPNAV Vazia no Desktop após transferência para o Rail */}
         </div>
       </header>
 
@@ -365,9 +416,11 @@ export default function App() {
           <div className="mn-item"><div className="mn-ico">👥</div>Guildas</div>
           <div className="mn-item"><div className="mn-ico">⚔️</div>Batalha</div>
           <div className="mn-item"><div className="mn-ico">🔔</div><span className="mn-badge">12</span>Alertas</div>
-          <div className="mn-item"><div className="mn-ico">👤</div>Herói</div>
+          <div className="mn-item" onClick={async () => await supabase.auth.signOut()}><div className="mn-ico">🚪</div>Sair</div>
         </div>
       </nav>
+        </>
+      )}
     </>
   );
 }
