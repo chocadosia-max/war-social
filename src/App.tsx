@@ -35,11 +35,11 @@ export default function App() {
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
 
   const [energy, setEnergy] = useState(100);
-  const [hp, setHp] = useState(100);
-  const [mana, setMana] = useState(18200); // Mocked for UI depth
+  const [hp] = useState(100);
+  const [mana] = useState(18200); // Mocked for UI depth
   const [xp, setXp] = useState(24800);   // Mocked for UI depth
-  const [karma, setKarma] = useState(2847);
-  const [rankIndex, setRankIndex] = useState(0);
+  const [karma] = useState(2847);
+  const [rankIndex] = useState(0);
 
   const [shakeId, setShakeId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<{id: number, ico: string, title: string, sub: string}[]>([]);
@@ -202,6 +202,8 @@ export default function App() {
                 <div className="sbar-track"><div className="sbar-fill sb-xp" style={{ width: `${(xp/36000)*100}%` }}></div></div>
                 <div className="sbar-row"><span className="sbar-label">⚡ Energia</span><span className="sbar-val" style={{ color: 'var(--gold)' }}>{energy}%</span></div>
                 <div className="sbar-track"><div className="sbar-fill sb-xp" style={{ width: `${energy}%`, background: 'var(--g-fire)' }}></div></div>
+                <div className="sbar-row"><span className="sbar-label">❤️ Saúde (HP)</span><span className="sbar-val" style={{ color: 'var(--venom)' }}>{hp}%</span></div>
+                <div className="sbar-track"><div className="sbar-fill sb-hp" style={{ width: `${hp}%` }}></div></div>
                 <div className="sbar-row"><span className="sbar-label">💧 Mana</span><span className="sbar-val" style={{ color: 'var(--ice)' }}>{mana / 1000}K / 20K</span></div>
                 <div className="sbar-track"><div className="sbar-fill sb-mp" style={{ width: `${(mana/20000)*100}%` }}></div></div>
               </div>
@@ -289,7 +291,7 @@ export default function App() {
               
               <div className="post-reacts">
                 <div className="react on"><span className="re">🔥</span><span className="rn">14</span></div>
-                <div className="react"><span className="re">⚔️</span><span class="rn">8</span></div>
+                <div className="react"><span className="re">⚔️</span><span className="rn">8</span></div>
                 <div className="react-add">＋</div>
               </div>
 
@@ -341,15 +343,20 @@ export default function App() {
               ))}
            </div>
 
-           <div className="panel">
-              <div className="ph"><span className="ph-title"><span className="accent-bar"></span>Próximos Eventos</span></div>
-              <div className="ev-item">
-                <div className="ev-date"><div className="ev-d">31</div><div className="ev-m">Mar</div></div>
-                <div style={{ flex: 1 }}><div className="ev-nm">Assalto ao Sepulcro</div><div className="ev-sb">Raid Épico · 20h</div></div>
-                <span className="ev-type" style={{ background: 'rgba(231,76,60,.12)', color: '#ff7070' }}>Raid</span>
-              </div>
-           </div>
-        </aside>
+            <div className="panel">
+               <div className="ph"><span className="ph-title"><span className="accent-bar"></span>Radar Tático</span></div>
+               <div style={{ maxHeight: '200px', overflowY: 'auto', padding: '0 14px 14px' }}>
+                 {actionLogs.length === 0 ? (
+                   <p style={{ fontSize: '0.7rem', color: 'var(--tx3)' }}>Aguardando sinal tático...</p>
+                 ) : actionLogs.slice(0, 8).map(log => (
+                   <div key={log.id} style={{ fontSize: '0.68rem', padding: '6px 0', borderBottom: '1px solid var(--rim)', color: 'var(--tx2)' }}>
+                     <strong style={{ color: 'var(--gold)' }}>@{log.actor}</strong> {log.details}
+                     <div style={{ fontSize: '0.55rem', color: 'var(--tx3)', marginTop: '2px' }}>⏱ {timeAgo(log.created_at)}</div>
+                   </div>
+                 ))}
+               </div>
+            </div>
+         </aside>
       </div>
 
       <nav className="mobile-nav">
