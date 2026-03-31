@@ -181,34 +181,12 @@ export default function App() {
   };
 
   const getThemedWeapons = () => {
-    switch(currentSkin) {
-      case 'viking': return [
-        { id: 'missile', name: 'MACHADO', icon: '🪓', damage: 15, cost: 2, xpGain: 5, desc: '15 DMG · Brutal' },
-        { id: 'emp', name: 'TROVÃO', icon: '⚡', damage: 10, cost: 8, xpGain: 15, special: 'REMOVE_SHIELDS', desc: '10 DMG · Choque' },
-        { id: 'nuke', name: 'RAGNAROK', icon: '❄️', damage: 50, cost: 20, xpGain: 40, desc: '50 DMG · Fim do Mundo' },
-      ];
-      case 'samurai': return [
-        { id: 'missile', name: 'KATANA', icon: '⚔️', damage: 15, cost: 2, xpGain: 5, desc: '15 DMG · Preciso' },
-        { id: 'emp', name: 'SHURIKEN', icon: '🎯', damage: 10, cost: 8, xpGain: 15, special: 'REMOVE_SHIELDS', desc: '10 DMG · Ágil' },
-        { id: 'nuke', name: 'DRAGÃO', icon: '🐉', damage: 50, cost: 20, xpGain: 40, desc: '50 DMG · Honorável' },
-      ];
-      case 'egyptian': return [
-        { id: 'missile', name: 'CETRO', icon: '🦯', damage: 15, cost: 2, xpGain: 5, desc: '15 DMG · Místico' },
-        { id: 'emp', name: 'MALDIÇÃO', icon: '💀', damage: 10, cost: 8, xpGain: 15, special: 'REMOVE_SHIELDS', desc: '10 DMG · Praga' },
-        { id: 'nuke', name: 'SOL DE RÁ', icon: '☀️', damage: 50, cost: 20, xpGain: 40, desc: '50 DMG · Divino' },
-      ];
-      case 'roman': return [
-        { id: 'missile', name: 'GLÁDIO', icon: '🗡️', damage: 15, cost: 2, xpGain: 5, desc: '15 DMG · Disciplinado' },
-        { id: 'emp', name: 'TESTUDO', icon: '🛡️', damage: 10, cost: 8, xpGain: 15, special: 'REMOVE_SHIELDS', desc: '10 DMG · Tático' },
-        { id: 'nuke', name: 'CATAPULTA', icon: '☄️', damage: 50, cost: 20, xpGain: 40, desc: '50 DMG · Imperial' },
-      ];
-      case 'brasil': return [
-        { id: 'missile', name: 'TACAPE', icon: '🪵', damage: 15, cost: 2, xpGain: 5, desc: '15 DMG · Ancestral' },
-        { id: 'emp', name: 'CAPOEIRA', icon: '🤸', damage: 10, cost: 8, xpGain: 15, special: 'REMOVE_SHIELDS', desc: '10 DMG · Ginga' },
-        { id: 'nuke', name: 'AMAZÔNIA', icon: '🐆', damage: 50, cost: 20, xpGain: 40, desc: '50 DMG · Fúria Verde' },
-      ];
-      default: return WEAPONS;
-    }
+    if (currentSkin === 'brasil') return [
+      { id: 'missile', name: 'TACAPE', icon: '🪵', damage: 15, cost: 2, xpGain: 5, desc: '15 DMG · Ancestral' },
+      { id: 'emp', name: 'CAPOEIRA', icon: '🤸', damage: 10, cost: 8, xpGain: 15, special: 'REMOVE_SHIELDS', desc: '10 DMG · Ginga' },
+      { id: 'nuke', name: 'AMAZÔNIA', icon: '🐆', damage: 50, cost: 20, xpGain: 40, desc: '50 DMG · Fúria Verde' },
+    ];
+    return WEAPONS;
   };
 
   const themedWeapons = getThemedWeapons();
@@ -625,10 +603,6 @@ export default function App() {
             <div className="skin-selector">
               {[
                 { id: 'default', name: 'Scifi', icon: '🚀' },
-                { id: 'viking', name: 'Viking', icon: '🪓' },
-                { id: 'samurai', name: 'Samurai', icon: '🏮' },
-                { id: 'egyptian', name: 'Egito', icon: '🏺' },
-                { id: 'roman', name: 'Roma', icon: '🏟️' },
                 { id: 'brasil', name: 'Brasil', icon: '🇧🇷' },
               ].map(skin => (
                 <button 

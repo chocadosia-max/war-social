@@ -18,58 +18,6 @@
   --radius: 12px;
 }
 
-[data-theme="viking"] {
-  --bg: #030508;
-  --surface: #0d131a; /* Solid deep blue-grey */
-  --surface-accent: #1a242f;
-  --accent: #3498db;
-  --orange: #e67e22;
-  --gold: #bdc3c7;
-  --gold-glow: rgba(52, 152, 219, 0.4);
-  --bg-image: url('/skins/viking.png');
-  --radius: 4px;
-  --font-title: 'MedievalSharp', cursive;
-}
-
-[data-theme="samurai"] {
-  --bg: #050202;
-  --surface: #140a0a; /* Solid deep red-black */
-  --surface-accent: #221212;
-  --accent: #e74c3c;
-  --orange: #c0392b;
-  --gold: #ffffff;
-  --gold-glow: rgba(231, 76, 60, 0.4);
-  --bg-image: url('/skins/samurai.png');
-  --radius: 0px;
-  --font-title: 'Ma Shan Zheng', cursive;
-}
-
-[data-theme="egyptian"] {
-  --bg: #070503;
-  --surface: #1a160d; /* Solid deep gold-black */
-  --surface-accent: #2c2518;
-  --accent: #f1c40f;
-  --orange: #d35400;
-  --gold: #f39c12;
-  --gold-glow: rgba(243, 156, 18, 0.5);
-  --bg-image: url('/skins/egyptian.png');
-  --radius: 20px;
-  --font-title: 'Cinzel', serif;
-}
-
-[data-theme="roman"] {
-  --bg: #060304;
-  --surface: #1a0d13; /* Solid deep purple-black */
-  --surface-accent: #2d1821;
-  --accent: #9b59b6;
-  --orange: #8e44ad;
-  --gold: #bdc3c7;
-  --gold-glow: rgba(155, 89, 182, 0.4);
-  --bg-image: url('/skins/roman.png');
-  --radius: 8px;
-  --font-title: 'Cinzel', serif;
-}
-
 [data-theme="brasil"] {
   --bg: #010501;
   --surface: #0a1f0a; /* Solid deep jungle green */
@@ -449,72 +397,61 @@ body {
 .faction-btn.selected{border-width:2px}
 
 /* RESPONSIVE */
-/* 📱 MOBILE RESPONSIVENESS (375px+) */
 @media (max-width: 768px) {
   .top-bar {
-    height: auto;
-    padding: 10px;
-    flex-direction: column;
-    gap: 10px;
+    padding: 8px 12px;
+    gap: 15px;
+    justify-content: space-between;
   }
   
-  .search-wrap {
-    max-width: 100%;
-    order: 2;
-  }
+  .search-wrap { display: none; } /* Hide search to save space */
   
   .nav-tabs {
-    order: 1;
-    width: 100%;
-    justify-content: center;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 5px;
+    flex: 1;
+    overflow-x: auto;
+    gap: 4px;
+    padding-bottom: 0;
+    border: none;
+    justify-content: flex-start;
   }
   
-  .user-nav {
-    display: none; /* Hide profile in top bar, it's redundant if we use a drawer or simplified view */
-  }
+  .nav-item { padding: 8px 12px; font-size: 0.8rem; }
+  .user-nav { display: none; }
 
   .page {
-    grid-template-columns: 1fr;
-    padding: 120px 10px 80px 10px; /* Space for top bar and potential bottom nav */
+    padding: 80px 8px 100px 8px;
   }
 
-  .left-col, .right-col {
-    display: none;
-  }
+  .left-col, .right-col { display: none; }
 
-  .feed-tabs {
-    justify-content: center;
-  }
-
-  .skin-selector {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  h1 { font-size: 1.5rem; }
-  .stat-val { font-size: 1.1rem; }
+  h1 { font-size: 1.3rem; }
+  .card { margin-bottom: 12px; padding: 12px; }
 }
 
-/* 🕹️ MOBILE QUICK NAVIGATION (BOTTOM BAR) */
+/* 🕹️ MOBILE HUD (BOTTOM BAR) */
 .mobile-nav {
-  display: none;
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: 60px;
-  background: var(--header-bg);
-  border-top: 2px solid var(--gold);
+  height: 70px;
+  background: rgba(13, 17, 23, 0.95);
+  border-top: 1px solid var(--border);
   z-index: 2000;
-  display: flex;
+  display: flex !important;
   justify-content: space-around;
   align-items: center;
   padding: 0 10px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 -5px 25px rgba(0,0,0,0.5);
 }
 
-@media (min-width: 769px) {
-  .mobile-nav { display: none !important; }
+.mod-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
 }
+
+@media (min-width: 769px) { .mobile-nav { display: none !important; } }
 
 /* Ensure Feed takes full width on mobile */
 .main-col {
@@ -990,9 +927,4 @@ button:active, .nav-item:active, .comp-tool:active, .weapon-btn:active, .skin-bt
 .modal-btn-ghost:hover { border-color: var(--t2); color: #fff; }
 
 /* 🎨 THEME SPECIFIC ORNAMENTS */
-[data-theme="viking"] .card::before { content: 'ᚠᚢᚦ'; position: absolute; top: 12px; right: 12px; opacity: 0.08; font-size: 2.2rem; color: #3498db; pointer-events: none; }
-[data-theme="samurai"] .card::before { content: '🏮'; position: absolute; top: 12px; right: 12px; opacity: 0.15; font-size: 2.2rem; pointer-events: none; }
-[data-theme="egyptian"] .card::before { content: '𓀀'; position: absolute; top: 12px; right: 12px; opacity: 0.15; font-size: 2.2rem; pointer-events: none; }
-[data-theme="roman"] .card::before { content: '⚖️'; position: absolute; top: 12px; right: 12px; opacity: 0.15; font-size: 2.2rem; pointer-events: none; }
-[data-theme="brasil"] .card::before { content: '🦜'; position: absolute; top: 12px; right: 12px; opacity: 0.15; font-size: 2.2rem; pointer-events: none; }
-
+[data-theme="brasil"] .card::before { content: '🐆'; position: absolute; top: 12px; right: 12px; opacity: 0.15; font-size: 2.2rem; pointer-events: none; }
