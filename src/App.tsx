@@ -32,15 +32,15 @@ const MOCK_LEADERS = [
   { name: 'SRGT_GLITCH', rank: 'SARGENTO', points: 15900, icon: '🔥' },
 ];
 
-function timeAgo(dateStr: string): string {
+const timeAgo = (dateStr: string) => {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'agora';
-  if (mins < 60) return `há ${mins} min`;
+  if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `há ${hrs}h`;
-  return `há ${Math.floor(hrs / 24)}d`;
-}
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.floor(hrs / 24)}d`;
+};
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -74,41 +74,24 @@ export default function App() {
   const [shakeId, setShakeId] = useState<string | null>(null);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [explosions, setExplosions] = useState<Explosion[]>([]);
-  const [unlockedSkills, setUnlockedSkills] = useState<string[]>(['base']);
 
   const userName = session?.user.email?.split('@')[0].toUpperCase() || 'SOLDADO';
 
   useEffect(() => {
-    document.body.setAttribute('data-theme', currentSkin);
-  }, [currentSkin]);
-
-  useEffect(() => {
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => { setSession(session); })
-      .catch(() => {})
-      .finally(() => setLoadingAuth(false));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => { setSession(session); });
+    supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setLoadingAuth(false); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => { setSession(session); });
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     if (session) {
       fetchData();
-      const channel = supabase.channel('combat-channel');
-      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
+      const channel = supabase.channel('war-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, payload => {
         if (payload.eventType === 'INSERT') setPosts(prev => [payload.new as Post, ...prev]);
-        else if (payload.eventType === 'UPDATE') {
-          setPosts(prev => prev.map(p => p.id === payload.new.id ? payload.new as Post : p));
-          if (payload.new.hp < payload.old?.hp) { setShakeId(payload.new.id); setTimeout(() => setShakeId(null), 500); }
-        }
-      });
-      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, (payload) => {
-        if (payload.eventType === 'INSERT') setComments(prev => [...prev, payload.new as Comment]);
-      });
-      channel.on('postgres_changes', { event: '*', schema: 'public', table: 'actions_log' }, (payload) => {
-        if (payload.eventType === 'INSERT') setActionLogs(prev => [payload.new as ActionLog, ...prev].slice(0, 30));
-      });
-      channel.subscribe();
+        else if (payload.eventType === 'UPDATE') { setPosts(prev => prev.map(p => p.id === payload.new.id ? payload.new as Post : p)); setShakeId(payload.new.id); setTimeout(() => setShakeId(null), 500); }
+      }).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, p => setComments(prev => [...prev, p.new as Comment]))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'actions_log' }, p => setActionLogs(prev => [p.new as ActionLog, ...prev].slice(0, 50)))
+      .subscribe();
       return () => { supabase.removeChannel(channel); };
     }
   }, [session]);
@@ -116,351 +99,270 @@ export default function App() {
   const fetchData = async () => {
     const { data: p } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
     if (p) setPosts(p);
-    const { data: c } = await supabase.from('comments').select('*').order('created_at', { ascending: true }).limit(500);
+    const { data: c } = await supabase.from('comments').select('*').limit(300);
     if (c) setComments(c);
-    const { data: l } = await supabase.from('actions_log').select('*').order('created_at', { ascending: false }).limit(30);
+    const { data: l } = await supabase.from('actions_log').select('*').order('created_at', { ascending: false }).limit(50);
     if (l) setActionLogs(l);
   };
 
-  useEffect(() => {
-    if (!session) return;
-    const t = unlockedSkills.includes('regen') ? 5000 : 10000;
-    const timer = setInterval(() => setEnergy(prev => Math.min(100, prev + 1)), t);
-    return () => clearInterval(timer);
-  }, [unlockedSkills, session]);
-
-  useEffect(() => {
-    if (xp >= 100) { setXp(xp - 100); setSp(prev => prev + 1); if (rankIndex < RANKS.length - 1) setRankIndex(prev => prev + 1); }
-  }, [xp, rankIndex]);
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault(); setAuthError('');
-    if (isSignUp) { const { error } = await supabase.auth.signUp({ email, password }); if (error) setAuthError(error.message); else setAuthError('Registro concluído! Bem-vindo(a) às tropas.'); }
-    else { const { error } = await supabase.auth.signInWithPassword({ email, password }); if (error) setAuthError(error.message); }
-  };
-
-  const logAction = async (actor: string, type: string, details: string) => { await supabase.from('actions_log').insert([{ actor, action_type: type, details }]); };
-
-  const calculateCost = (baseCost: number, type: 'ATTACK' | 'DEFENSE' | 'TACTICAL') => {
-    let cost = baseCost;
-    if (userFaction.bonus === type) { if (type === 'ATTACK') cost = 1; else if (type === 'DEFENSE') cost = 3; else cost = baseCost - 2; }
-    if (unlockedSkills.includes('efficiency') && type === 'ATTACK') cost = Math.max(1, cost - 1);
-    return cost;
+    const { error } = isSignUp ? await supabase.auth.signUp({ email, password }) : await supabase.auth.signInWithPassword({ email, password });
+    if (error) setAuthError(error.message);
   };
 
   const handleDeploy = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPostContent.trim() === '' || energy < 10 || !session) return;
-    const initialShields = unlockedSkills.includes('aegis') ? 1 : 0;
-    const { error } = await supabase.from('posts').insert([{ author: userName, rank: RANKS[rankIndex], faction_id: userFaction.id, content: newPostContent, hp: 100, shields: initialShields }]);
-    if (!error) { logAction(userName, 'DEPLOY', 'estabeleceu um novo bunker na posição tática.'); setNewPostContent(''); setEnergy(prev => prev - 10); setXp(prev => prev + 20); }
-  };
-
-  const handleComment = async (e: React.FormEvent, postId: string) => {
-    e.preventDefault();
-    const txt = commentInputs[postId];
-    if (!txt || txt.trim() === '' || !session) return;
-    const { error } = await supabase.from('comments').insert([{ post_id: postId, author: userName, content: txt }]);
-    if (!error) { setCommentInputs(prev => ({ ...prev, [postId]: '' })); setXp(prev => prev + 2); }
-  };
-
-  const fireProjectile = (e: React.MouseEvent, targetId: string, onHit: () => void) => {
-    const startX = e.clientX; const startY = e.clientY;
-    const targetEl = document.getElementById(`bunker-${targetId}`);
-    if (!targetEl) { onHit(); return; }
-    const rect = targetEl.getBoundingClientRect();
-    const endX = rect.left + rect.width / 2; const endY = rect.top + rect.height / 2;
-    const projId = Date.now();
-    setProjectiles(prev => [...prev, { id: projId, startX, startY, endX, endY }]);
-    setTimeout(() => {
-      setProjectiles(prev => prev.filter(p => p.id !== projId));
-      setExplosions(prev => [...prev, { id: projId, x: endX, y: endY }]);
-      setTimeout(() => setExplosions(prev => prev.filter(ex => ex.id !== projId)), 500);
-      onHit();
-    }, 400);
-  };
-
-  const getThemedWeapons = () => {
-    if (currentSkin === 'brasil') return [
-      { id: 'missile', name: 'TACAPE', icon: '🪵', damage: 15, cost: 2, xpGain: 5, desc: '15 DMG · Ancestral' },
-      { id: 'emp', name: 'CAPOEIRA', icon: '🤸', damage: 10, cost: 8, xpGain: 15, special: 'REMOVE_SHIELDS', desc: '10 DMG · Ginga' },
-      { id: 'nuke', name: 'AMAZÔNIA', icon: '🐆', damage: 50, cost: 20, xpGain: 40, desc: '50 DMG · Fúria Verde' },
-    ];
-    return WEAPONS;
-  };
-
-  const themedWeapons = getThemedWeapons();
-
-  const handleAttack = (e: React.MouseEvent, id: string, currentPost: Post) => {
-    const activeWeapon = themedWeapons.find(w => w.id === selectedWeapon.id) || themedWeapons[0];
-    const cost = calculateCost(activeWeapon.cost, activeWeapon.special ? 'TACTICAL' : 'ATTACK');
-    if (energy < cost || currentPost.hp === 0) return;
-    setEnergy(prev => prev - cost);
-    fireProjectile(e, id, async () => {
-      const extraDmg = unlockedSkills.includes('firepower') ? 5 : 0;
-      const newHp = Math.max(0, currentPost.hp - (activeWeapon.damage + extraDmg));
-      let newShields = currentPost.shields;
-      if (activeWeapon.special === 'REMOVE_SHIELDS') newShields = 0;
-      const { error } = await supabase.from('posts').update({ hp: newHp, shields: newShields }).eq('id', id);
-      if (!error) { setXp(prev => prev + activeWeapon.xpGain); logAction(userName, 'ATTACK', `usou ${activeWeapon.name} contra @${currentPost.author}.`); }
-    });
-  };
-
-  const handleShield = async (id: string, currentPost: Post) => {
-    const cost = calculateCost(5, 'DEFENSE');
-    if (energy < cost || currentPost.hp === 0) return;
-    const healAmount = unlockedSkills.includes('nano') ? 25 : 10;
-    const { error } = await supabase.from('posts').update({ shields: currentPost.shields + 1, hp: Math.min(100, currentPost.hp + healAmount) }).eq('id', id);
+    if (!newPostContent.trim() || energy < 10) return;
+    const { error } = await supabase.from('posts').insert([{ author: userName, rank: RANKS[rankIndex], faction_id: userFaction.id, content: newPostContent, hp: 100, shields: 0 }]);
     if (!error) { 
-      setEnergy(prev => prev - cost); 
-      setXp(prev => prev + 10); 
-      setHp(prev => Math.min(100, prev + 5)); 
-      logAction(userName, 'DEFEND', `reforçou o escudo de @${currentPost.author}.`); 
+      setNewPostContent(''); setEnergy(prev => prev - 10); setXp(prev => prev + 15);
+      await supabase.from('actions_log').insert([{ actor: userName, action_type: 'DEPLOY', details: 'estabeleceu um bunker tático.' }]);
     }
   };
 
-  const buySkill = (skillId: string, cost: number) => {
-    if (sp >= cost && !unlockedSkills.includes(skillId)) { setSp(prev => prev - cost); setUnlockedSkills(prev => [...prev, skillId]); }
-  };
-
-  const openUserProfile = async (authorName: string) => {
-    setSelectedUser(authorName);
-    const { data } = await supabase.from('actions_log').select('action_type').eq('actor', authorName);
-    if (data) {
-      setSelectedUserStats({
-        attacks: data.filter(d => d.action_type === 'ATTACK').length,
-        defends: data.filter(d => d.action_type === 'DEFEND').length,
-        drops: data.filter(d => d.action_type === 'DEPLOY').length,
-      });
+  const handleAttack = (e: React.MouseEvent, target: Post) => {
+    if (energy < selectedWeapon.cost || target.hp === 0) return;
+    setEnergy(prev => prev - selectedWeapon.cost);
+    const startX = e.clientX; const startY = e.clientY;
+    const targetEl = document.getElementById(`bunker-${target.id}`);
+    if (targetEl) {
+      const rect = targetEl.getBoundingClientRect();
+      const projId = Date.now();
+      setProjectiles(prev => [...prev, { id: projId, startX, startY, endX: rect.left + rect.width / 2, endY: rect.top + rect.height / 2 }]);
+      setTimeout(async () => {
+        setProjectiles(prev => prev.filter(p => p.id !== projId));
+        setExplosions(prev => [...prev, { id: projId, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }]);
+        setTimeout(() => setExplosions(prev => prev.filter(ex => ex.id !== projId)), 500);
+        await supabase.from('posts').update({ hp: Math.max(0, target.hp - selectedWeapon.damage) }).eq('id', target.id);
+        await supabase.from('actions_log').insert([{ actor: userName, action_type: 'ATTACK', details: `usou ${selectedWeapon.name} contra @${target.author}` }]);
+        setXp(prev => prev + 10);
+      }, 400);
     }
   };
 
-  if (loadingAuth) return <div className="loading-wrap"><h2>⚔️ WAR SOCIAL</h2><p style={{ color: '#5A6A82' }}>Iniciando rede...</p></div>;
+  const handleShield = async (target: Post) => {
+    if (energy < 10) return;
+    setEnergy(prev => prev - 10);
+    await supabase.from('posts').update({ hp: Math.min(100, target.hp + 15) }).eq('id', target.id);
+    await supabase.from('actions_log').insert([{ actor: userName, action_type: 'DEFEND', details: `reforçou as defesas de @${target.author}` }]);
+    setXp(prev => prev + 5);
+  };
+
+  const openUserProfile = async (name: string) => {
+    setSelectedUser(name);
+    const { data } = await supabase.from('actions_log').select('action_type').eq('actor', name);
+    if (data) setSelectedUserStats({ attacks: data.filter(d => d.action_type === 'ATTACK').length, defends: data.filter(d => d.action_type === 'DEFEND').length, drops: data.filter(d => d.action_type === 'DEPLOY').length });
+  };
+
+  if (loadingAuth) return <div className="loading-wrap" style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}><h2>INICIALIZANDO HUD...</h2></div>;
 
   if (!session) return (
-    <div className="auth-wrap">
-      <div className="auth-card">
-        <div className="auth-logo">⚔️ WarSocial</div>
-        <p className="auth-sub">ACESSO RESTRITO ÀS TROPAS</p>
-        <form onSubmit={handleAuth} className="auth-form">
-          <input className="auth-input" type="email" placeholder="Identificação (E-mail)" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className="auth-input" type="password" placeholder="Senha Criptografada" value={password} onChange={e => setPassword(e.target.value)} required />
-          {authError && <p className="auth-error">{authError}</p>}
-          <button type="submit" className="auth-btn">{isSignUp ? '⚔️ ALISTAR-SE' : '🔑 ACESSAR BASE'}</button>
+    <div className="auth-overlay" style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
+      <div className="card" style={{ padding: 40, width: 400, textAlign: 'center' }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: 20 }}>⚔️ WAR SOCIAL</h2>
+        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <input className="post-input" style={{ borderRadius: 8 }} placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input className="post-input" style={{ borderRadius: 8 }} type="password" placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} required />
+          {authError && <p style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{authError}</p>}
+          <button className="nav-center" style={{ width: '100%', border: 'none', cursor: 'pointer' }}>{isSignUp ? 'ALISTAR' : 'ACESSAR'}</button>
         </form>
-        <p className="auth-toggle" onClick={() => setIsSignUp(!isSignUp)}>{isSignUp ? 'Já pertence às tropas? Faça Login.' : 'Recruta novo? Aliste-se aqui.'}</p>
+        <p onClick={() => setIsSignUp(!isSignUp)} style={{ marginTop: 20, cursor: 'pointer', color: 'var(--t3)', fontSize: '0.8rem' }}>{isSignUp ? 'Já tem conta? Login' : 'Novo recruta? Registre-se'}</p>
       </div>
     </div>
   );
 
   return (
     <>
-      <header className="topnav">
-        <div className="logo"><div className="logo-icon">⚔️</div><span className="logo-text">WarSocial</span></div>
-        <nav className="nav-tabs">
-          <button className="ntab active">🏠 Feed</button>
-          <button className="ntab" onClick={() => setShowSkills(true)}>🏆 Ranking</button>
-        </nav>
-        <div className="nav-right">
-           <div className="nav-user" onClick={() => openUserProfile(userName)}>
-            <div className="nav-av">{userName.charAt(0)}</div>
-            <div className="desktop-only" style={{ display: 'flex', flexDirection: 'column' }}>
-              <span className="nav-uname">{userName}</span>
-              <span className="nav-ulevel" style={{ fontSize: '.7rem' }}>⭐ {RANKS[rankIndex]}</span>
-            </div>
-          </div>
-          <button className="nav-ico" onClick={async () => { await supabase.auth.signOut(); }} title="Sair">🚪</button>
+      <header className="top-bar">
+        <div className="logo"><span className="logo-icon">⚔️</span><span className="logo-text">WarSocial</span></div>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+           <div className="desktop-only" style={{ display: 'flex', gap: 16 }}>
+              <span style={{ color: 'var(--gold)', fontWeight: 800 }}>⚡ {energy}</span>
+              <span style={{ color: 'var(--accent)', fontWeight: 800 }}>🛡️ {hp}%</span>
+           </div>
+           <button onClick={() => setShowShop(true)} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer' }}>🛒</button>
+           <button onClick={async () => await supabase.auth.signOut()} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer' }}>🚪</button>
         </div>
       </header>
 
-      <div className="page">
-        <aside className="left-col">
-          <div className="card profile-card">
-            <div className="profile-banner"><div className="profile-banner-text">{userFaction.name} · ZONA DE GUERRA</div></div>
-            <div className="profile-av-wrap">
-              <div className="profile-av">{userName.charAt(0)}<div className="online-ring"></div></div>
-            </div>
-            <div className="profile-body">
-              <div className="profile-name">{userName}</div>
-              <div className="profile-title">✦ {RANK_TITLES[rankIndex]}</div>
+      <div className="app-container" data-theme={currentSkin}>
+        <aside className="left-col sidebar-sticky">
+           <div className="card profile-card">
+              <div className="profile-av-wrap"><div className="profile-av">{userName.charAt(0)}</div></div>
+              <div className="profile-name">@{userName}</div>
+              <div className="profile-rank">{RANK_TITLES[rankIndex]}</div>
               <div className="stats-grid">
-                <div className="stat-box"><span className="stat-val">{energy}⚡</span><span className="stat-key">Energia</span></div>
-                <div className="stat-box"><span className="stat-val">{hp}%❤️</span><span className="stat-key">HP</span></div>
-                <div className="stat-box"><span className="stat-val">{xp}</span><span className="stat-key">XP</span></div>
-                <div className="stat-box"><span className="stat-val">{sp}</span><span className="stat-key">SP</span></div>
+                 <div className="stat-box"><span className="stat-val">{energy}</span><span className="stat-key">Energia</span></div>
+                 <div className="stat-box"><span className="stat-val">{xp}</span><span className="stat-key">XP</span></div>
               </div>
-              <button className="btn-outline" onClick={() => setShowSkills(true)}>🧬 NEXUS SKILLS</button>
-            </div>
-          </div>
+              <div style={{ marginTop: 16, fontSize: '0.7rem', color: 'var(--t3)' }}>UNIT: {userFaction.name}</div>
+              <button className="post-action" style={{ width: '100%', marginTop: 20, border: '1px solid var(--gold)', color: 'var(--gold)' }} onClick={() => setShowSkills(true)}>🧬 NEXUS TERMINAL</button>
+           </div>
+
+           <div className="card" style={{ padding: 20 }}>
+             <h3 style={{ fontSize: '0.8rem', color: 'var(--t3)', marginBottom: 12 }}>SELECIONAR ARSENAL</h3>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {WEAPONS.map(w => (
+                  <button key={w.id} onClick={() => setSelectedWeapon(w)} className={`post-action ${selectedWeapon.id === w.id ? 'active' : ''}`} style={{ justifyContent: 'flex-start', padding: '12px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>{w.icon}</span> <span>{w.name}</span>
+                  </button>
+                ))}
+             </div>
+           </div>
         </aside>
 
-        <main className="main-col">
-          {/* INSTA STORIES (COMPACT) */}
-          <div className="stories-row mobile-only">
-            {MOCK_LEADERS.map(l => (
-              <div key={l.name} className="story-item" onClick={() => openUserProfile(l.name)}>
-                <div className="story-ring"><div className="story-av" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{l.icon}</div></div>
-                <span className="story-name">{l.name.replace('GENERAL_', '')}</span>
-              </div>
-            ))}
-            {['TITAN', 'NEXUS', 'SQUAD', 'ALPHA', 'BRAVO'].map(name => (
-              <div key={name} className="story-item" onClick={() => openUserProfile(name)}>
-                <div className="story-ring"><div className="story-av" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{name.charAt(0)}</div></div>
-                <span className="story-name">{name}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="mobile-composer mobile-only">
-             <div className="profile-av" style={{ width: 34, height: 34, fontSize: '0.8rem' }}>{userName.charAt(0)}</div>
-             <form onSubmit={handleDeploy} style={{ flex: 1, display: 'flex', gap: 8 }}>
-                <input className="post-input" placeholder={`Status de combate, ${userName}?`} value={newPostContent} onChange={e => setNewPostContent(e.target.value)} />
-                <button className="btn-post-round">⚔️</button>
-             </form>
-          </div>
-
-          <div className="post-feed">
-            {posts.map(post => (
-              <article key={post.id} className={`card post ${shakeId === post.id ? 'shake-hard' : ''}`} id={`bunker-${post.id}`}>
-                <div className="post-head">
-                  <div className="post-av" style={{ width: 32, height: 32 }} onClick={() => openUserProfile(post.author)}>{post.author.charAt(0)}</div>
-                  <div className="post-meta">
-                    <span className="post-author">@{post.author}</span>
-                    <span className="post-time">{timeAgo(post.created_at)}</span>
-                  </div>
-                </div>
-                <div className="post-body" style={{ fontSize: '0.9rem', padding: '10px 0' }}>{post.content}</div>
-                
-                <div className="hp-bar-outer">
-                   <div className="hp-bar-inner" style={{ 
-                     width: `${post.hp}%`, 
-                     background: post.hp > 60 ? 'var(--accent)' : post.hp > 30 ? 'var(--gold)' : 'var(--red)' 
-                   }}></div>
-                </div>
-
-                <div className="post-actions">
-                  <button className="post-action atk" onClick={e => handleAttack(e, post.id, post)}>{selectedWeapon.icon} {selectedWeapon.damage} ATK</button>
-                  <button className="post-action def" onClick={() => handleShield(post.id, post)}>🛡️ DEF</button>
-                </div>
-                <div className="comments-section" style={{ borderTop: 'none', padding: '0 4px' }}>
-                   {comments.filter(c => c.post_id === post.id).slice(-1).map(c => (
-                     <div key={c.id} className="comment-item" style={{ fontSize: '0.75rem', color: 'var(--t3)' }}><strong>@{c.author}</strong> {c.content}</div>
-                   ))}
-                   <form onSubmit={e => handleComment(e, post.id)} className="comment-form" style={{ marginTop: 8 }}>
-                     <input className="comment-input" style={{ background: 'transparent', height: 26, fontSize: '0.75rem' }} placeholder="Adicionar transissão..." value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({ ...prev, [post.id]: e.target.value }))} />
-                   </form>
-                </div>
-              </article>
-            ))}
-          </div>
-        </main>
-
-        <aside className="right-col">
-          <div className="card">
-            <div className="ch"><span className="ch-title">📡 Radar Combat</span></div>
-            <div className="radar-list" style={{ maxHeight: 300, overflowY: 'auto' }}>
-              {actionLogs.map(log => (
-                <div key={log.id} style={{ fontSize: '.75rem', marginBottom: 8 }}>
-                  <strong>@{log.actor}</strong> {log.details}
+        <main className="main-feed">
+           <div className="stories-row">
+              {MOCK_LEADERS.map(l => (
+                <div key={l.name} className="story-item" onClick={() => openUserProfile(l.name)}>
+                  <div className="story-ring"><div className="story-av" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{l.icon}</div></div>
+                  <span className="story-name">{l.name.split('_')[1] || l.name}</span>
                 </div>
               ))}
-            </div>
-          </div>
-          <div className="card" style={{ marginTop: 12 }}>
-            <div className="ch"><span className="ch-title">🏆 Ranking Elite</span></div>
-            {MOCK_LEADERS.map((l, i) => (
-              <div key={i} className="rank-item" style={{ padding: '8px 0' }}>
-                <span>#{i+1}</span> <strong>@{l.name}</strong> <span style={{ marginLeft: 'auto', color: 'var(--gold)' }}>{l.points}</span>
+              {['TITAN', 'SQUAD', 'NEXUS', 'ALPHA', 'BRAVO'].map(n => (
+                <div key={n} className="story-item" onClick={() => openUserProfile(n)}>
+                   <div className="story-ring"><div className="story-av" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{n.charAt(0)}</div></div>
+                   <span className="story-name">{n}</span>
+                </div>
+              ))}
+           </div>
+
+           <div className="card" style={{ padding: 16 }}>
+              <form onSubmit={handleDeploy} style={{ display: 'flex', gap: 12 }}>
+                <div className="post-av" style={{ width: 38, height: 38 }}>{userName.charAt(0)}</div>
+                <input className="post-input" placeholder={`Briefing de guerra, ${userName}?`} value={newPostContent} onChange={e => setNewPostContent(e.target.value)} />
+                <button className="nav-center" style={{ width: 42, height: 42, margin: 0, borderRadius: '50%', border: 'none', cursor: 'pointer' }}>⚔️</button>
+              </form>
+           </div>
+
+           {posts.map(post => (
+             <article key={post.id} className={`card post ${shakeId === post.id ? 'shake-hard' : ''}`} id={`bunker-${post.id}`}>
+                <div className="post-head">
+                   <div className="post-av" onClick={() => openUserProfile(post.author)}>{post.author.charAt(0)}</div>
+                   <div className="post-meta">
+                      <div className="post-author">@{post.author}</div>
+                      <div className="post-time">{timeAgo(post.created_at)}</div>
+                   </div>
+                </div>
+                <div className="post-body">{post.content}</div>
+                <div className="hp-module">
+                   <div className="hp-label"><span>Integridade do Bunker</span> <span>{post.hp}%</span></div>
+                   <div className="hp-track">
+                      <div className={`hp-fill ${post.hp > 60 ? 'hp-high' : post.hp > 30 ? 'hp-mid' : 'hp-low'}`} style={{ width: `${post.hp}%` }}></div>
+                   </div>
+                </div>
+                <div className="post-actions">
+                   <button className="post-action atk" onClick={e => handleAttack(e, post)}>⚔️ {selectedWeapon.damage} ATK</button>
+                   <button className="post-action def" onClick={() => handleShield(post)}>🛡️ REFORÇAR</button>
+                   <button className="post-action" style={{ border: 'none' }}>💬 {comments.filter(c => c.post_id === post.id).length || ''}</button>
+                </div>
+                {comments.filter(c => c.post_id === post.id).length > 0 && (
+                  <div style={{ padding: '0 20px 16px', fontSize: '0.8rem', color: 'var(--t3)' }}>
+                    <strong>@{comments.find(c => c.post_id === post.id)?.author}:</strong> {comments.find(c => c.post_id === post.id)?.content}
+                  </div>
+                )}
+                <form onSubmit={e => {
+                   e.preventDefault();
+                   const txt = commentInputs[post.id];
+                   if (txt) {
+                     supabase.from('comments').insert([{ post_id: post.id, author: userName, content: txt }]).then(() => setCommentInputs(prev => ({ ...prev, [post.id]: '' })));
+                   }
+                }} style={{ padding: '0 20px 20px' }}>
+                   <input className="post-input" style={{ background: 'transparent', height: 30, fontSize: '0.8rem' }} placeholder="Adicionar transmissão..." value={commentInputs[post.id] || ''} onChange={evt => setCommentInputs(p => ({ ...p, [post.id]: evt.target.value }))} />
+                </form>
+             </article>
+           ))}
+        </main>
+
+        <aside className="right-col sidebar-sticky">
+           <div className="card radar-card">
+              <h3 style={{ fontSize: '0.9rem', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>📡 RADAR TÁTICO</h3>
+              <div className="radar-list">
+                 {actionLogs.map(log => (
+                   <div key={log.id} className="radar-entry"><strong>@{log.actor}</strong> {log.details}</div>
+                 ))}
+                 {actionLogs.length === 0 && <div className="radar-entry" style={{ opacity: 0.5 }}>Silêncio no rádio...</div>}
               </div>
-            ))}
-          </div>
+           </div>
+           
+           <div className="card" style={{ padding: 20, marginTop: 20 }}>
+             <h3 style={{ fontSize: '0.9rem', marginBottom: 12 }}>🏆 ELITE COMANDO</h3>
+             {MOCK_LEADERS.map((l, i) => (
+               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)', fontSize: '0.85rem' }}>
+                  <span>#{i+1} @{l.name}</span>
+                  <span style={{ color: 'var(--gold)', fontWeight: 800 }}>{l.points}</span>
+               </div>
+             ))}
+           </div>
         </aside>
       </div>
 
       <nav className="mobile-nav">
-        <div className="nav-icon-btn active"><span className="nav-icon">🏚️</span><span className="nav-label">Home</span></div>
-        <div className="nav-icon-btn" onClick={() => setShowSkills(true)}><span className="nav-icon">📡</span><span className="nav-label">Radar</span></div>
-        <div className="nav-compose" onClick={() => document.querySelector<HTMLInputElement>('.post-input')?.focus()}><span>+</span></div>
-        <div className="nav-icon-btn" onClick={() => setShowSkills(true)}><span className="nav-icon">⚔️</span><span className="nav-label">Arsenal</span></div>
-        <div className="nav-icon-btn" onClick={() => setSelectedUser(userName)}><span className="nav-icon">👤</span><span className="nav-label">Perfil</span></div>
+         <div className="nav-btn active"><span className="icon">🏠</span><span className="label">Início</span></div>
+         <div className="nav-btn" onClick={() => setShowSkills(true)}><span className="icon">📡</span><span className="label">Radar</span></div>
+         <div className="nav-center" onClick={() => document.querySelector<HTMLInputElement>('.post-input')?.focus()}><span>+</span></div>
+         <div className="nav-btn" onClick={() => setShowSkills(true)}><span className="icon">⚔️</span><span className="label">Arsenal</span></div>
+         <div className="nav-btn" onClick={() => openUserProfile(userName)}><span className="icon">👤</span><span className="label">Perfil</span></div>
       </nav>
 
       {/* MODALS */}
       {selectedUser && (
         <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
           <div className="modal-panel" onClick={e => e.stopPropagation()}>
-            <div className="profile-av" style={{ width: 80, height: 80, margin: '0 auto 16px' }}>{selectedUser.charAt(0)}</div>
-            <h2 style={{ textAlign: 'center' }}>@{selectedUser}</h2>
-            
-            {selectedUser === userName && (
-              <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                <div style={{ color: 'var(--red)', fontWeight: 'bold' }}>HP: {hp}%</div>
-                <div className="bar-track" style={{ height: 6, width: '100px', margin: '4px auto' }}><div className="bar-fill bar-hp" style={{ width: `${hp}%` }}></div></div>
-                <button onClick={() => setHp(100)} className="modal-btn-ghost" style={{ fontSize: '.6rem', padding: '2px 8px' }}>Reset Vitality</button>
-              </div>
-            )}
-
-            <div className="modal-stats">
-               <div className="modal-stat"><div>{selectedUserStats.attacks}</div><span>Ataques</span></div>
-               <div className="modal-stat"><div>{selectedUserStats.defends}</div><span>Defesas</span></div>
+            <div className="profile-av" style={{ width: 80, height: 80, margin: '0 auto 16px', border: '3px solid var(--gold)' }}>{selectedUser.charAt(0)}</div>
+            <h2 style={{ textAlign: 'center', marginBottom: 20 }}>@{selectedUser}</h2>
+            <div className="stats-grid">
+               <div className="stat-box"><span className="stat-val">{selectedUserStats.attacks}</span><span className="stat-key">Ataques</span></div>
+               <div className="stat-box"><span className="stat-val">{selectedUserStats.defends}</span><span className="stat-key">Defesas</span></div>
             </div>
-
             {selectedUser === userName && (
-              <div style={{ marginTop: 20 }}>
-                <h4 style={{ fontSize: '.8rem', marginBottom: 8, color: 'var(--gold)' }}>ALINHAMENTO DE FACÇÃO</h4>
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <div style={{ marginTop: 24 }}>
+                <h4 style={{ fontSize: '0.8rem', color: 'var(--t3)', marginBottom: 12, textAlign: 'center' }}>PERSONALIZAR HUD</h4>
+                <div style={{ display: 'flex', gap: 12 }}>
+                   <button className={`post-action ${currentSkin === 'default' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCurrentSkin('default')}>SCIFI</button>
+                   <button className={`post-action ${currentSkin === 'brasil' ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => setCurrentSkin('brasil')}>BRASIL</button>
+                </div>
+                <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                   {FACTIONS.map(f => (
-                    <button key={f.id} onClick={() => setUserFaction(f)} className={`skill-node ${userFaction.id === f.id ? 'active' : ''}`} style={{ padding: '4px 8px', fontSize: '.7rem' }}>{f.name}</button>
+                    <button key={f.id} onClick={() => setUserFaction(f)} className={`skill-node ${userFaction.id === f.id ? 'active' : ''}`} style={{ padding: '6px', fontSize: '0.6rem', border: '1px solid var(--border)', background: 'transparent', borderRadius: 4 }}>{f.name}</button>
                   ))}
                 </div>
               </div>
             )}
-
-            <div className="skin-selector" style={{ marginTop: 20 }}>
-               <button className={`skin-btn ${currentSkin === 'default' ? 'active' : ''}`} onClick={() => setCurrentSkin('default')}>🚀 Scifi</button>
-               <button className={`skin-btn ${currentSkin === 'brasil' ? 'active' : ''}`} onClick={() => setCurrentSkin('brasil')}>🇧🇷 Brasil</button>
-            </div>
-            <button className="modal-btn modal-btn-ghost" onClick={() => setSelectedUser(null)} style={{ width: '100%', marginTop: 20 }}>Fechar</button>
+            <button className="post-action" style={{ width: '100%', marginTop: 24 }} onClick={() => setSelectedUser(null)}>FECHAR TERMINAL</button>
           </div>
         </div>
       )}
 
       {showSkills && (
         <div className="modal-overlay" onClick={() => setShowSkills(false)}>
-          <div className="modal-panel" onClick={e => e.stopPropagation()}>
-            <h2 style={{ textAlign: 'center' }}>🧬 NEXUS</h2>
-            <p style={{ textAlign: 'center', color: 'var(--gold)', fontSize: '2rem', fontWeight: 900 }}>{sp} SP</p>
-            
-            <div className="card" style={{ padding: 12, marginBottom: 16 }}>
-               <h4 style={{ fontSize: '.8rem', color: 'var(--gold)', marginBottom: 8 }}>MÓDULOS DE ARMA</h4>
-               <div className="arsenal-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {themedWeapons.map(w => (
-                    <button key={w.id} className={`weapon-btn ${selectedWeapon.id === w.id ? 'selected' : ''}`} onClick={() => setSelectedWeapon(w)}>
-                      <span style={{ fontSize: '1.2rem' }}>{w.icon}</span>
-                    </button>
-                  ))}
-               </div>
-            </div>
-
-            <div className="skill-grid">
-               <div className={`skill-node card ${unlockedSkills.includes('regen') ? 'active' : ''}`} onClick={() => buySkill('regen', 1)}>⚡ Regen</div>
-               <div className={`skill-node card ${unlockedSkills.includes('firepower') ? 'active' : ''}`} onClick={() => buySkill('firepower', 2)}>🔥 Fúria</div>
-            </div>
-            <button className="modal-btn modal-btn-ghost" onClick={() => setShowSkills(false)} style={{ width: '100%', marginTop: 20 }}>Fechar</button>
-          </div>
+           <div className="modal-panel" onClick={e => e.stopPropagation()}>
+              <h2 style={{ textAlign: 'center', marginBottom: 12 }}>🧬 NEXUS SP: {sp}</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                 <div className="card" style={{ padding: 12, textAlign: 'center', cursor: 'pointer' }} onClick={() => setSp(s => s+1)}>REGENERAÇÃO</div>
+                 <div className="card" style={{ padding: 12, textAlign: 'center', opacity: 0.5 }}>FIREPOWER V2</div>
+              </div>
+              <div style={{ marginTop: 20, textAlign: 'center' }}>
+                 <p style={{ fontSize: '0.8rem', color: 'var(--accent)' }}>XP REQUERIDO PARA RANK UP: {100 - xp}</p>
+                 <button onClick={() => setRankIndex(prev => Math.min(prev + 1, RANKS.length - 1))} style={{ marginTop: 8, fontSize: '0.7rem', color: 'var(--gold)', background: 'none', border: '1px solid var(--gold)', padding: '4px 8px', borderRadius: 4 }}>Manual Rank Test</button>
+                 <button onClick={() => setHp(100)} style={{ marginLeft: 8, fontSize: '0.7rem', color: 'var(--red)', background: 'none', border: '1px solid var(--red)', padding: '4px 8px', borderRadius: 4 }}>Emergency Heal</button>
+              </div>
+              <button className="post-action" style={{ width: '100%', marginTop: 24 }} onClick={() => setShowSkills(false)}>FECHAR</button>
+           </div>
         </div>
       )}
 
       {showShop && (
         <div className="modal-overlay" onClick={() => setShowShop(false)}>
-          <div className="modal-panel shop-panel" onClick={e => e.stopPropagation()}>
-             <h2>💎 MERCADO NEGRO</h2>
-             <div className="card" style={{ padding: 20, border: '1px solid var(--gold)', marginTop: 20 }}>
-                <h3>PACK SUPREMO</h3>
-                <p>Skin Brasil + 50 SP + Rank VIP</p>
-                <button className="btn-buy-vip" style={{ width: '100%', marginTop: 12 }}>ADQUIRIR R$ 15,00</button>
-             </div>
-             <button className="modal-btn modal-btn-ghost" onClick={() => setShowShop(false)} style={{ width: '100%', marginTop: 20 }}>Fechar</button>
+          <div className="modal-panel" style={{ textAlign: 'center' }}>
+            <h2 style={{ color: 'var(--gold)', marginBottom: 20 }}>💎 BLACK MARKET</h2>
+            <div className="card" style={{ padding: 24, border: '1px solid var(--gold)' }}>
+               <h3>SUPREME VIP PACK</h3>
+               <p style={{ color: 'var(--t3)', fontSize: '0.85rem' }}>Skin Exclusiva Brasil + Status de Veterano</p>
+               <button className="nav-center" style={{ width: '100%', border: 'none', marginTop: 20, cursor: 'pointer' }}>ADQUIRIR R$ 15,00</button>
+            </div>
+            <button className="post-action" style={{ width: '100%', marginTop: 20 }} onClick={() => setShowShop(false)}>VOLTAR</button>
           </div>
         </div>
       )}
