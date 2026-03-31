@@ -233,7 +233,12 @@ export default function App() {
     if (energy < cost || currentPost.hp === 0) return;
     const healAmount = unlockedSkills.includes('nano') ? 25 : 10;
     const { error } = await supabase.from('posts').update({ shields: currentPost.shields + 1, hp: Math.min(100, currentPost.hp + healAmount) }).eq('id', id);
-    if (!error) { setEnergy(prev => prev - cost); setXp(prev => prev + 10); logAction(userName, 'DEFEND', `reforçou o escudo de @${currentPost.author}.`); }
+    if (!error) { 
+      setEnergy(prev => prev - cost); 
+      setXp(prev => prev + 10); 
+      setHp(prev => Math.min(100, prev + 5)); // Increment HUD life when defending
+      logAction(userName, 'DEFEND', `reforçou o escudo de @${currentPost.author}.`); 
+    }
   };
 
   const buySkill = (skillId: string, cost: number) => {
