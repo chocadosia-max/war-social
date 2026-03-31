@@ -395,10 +395,31 @@ export default function App() {
           <div className="modal-panel" onClick={e => e.stopPropagation()}>
             <div className="profile-av" style={{ width: 80, height: 80, margin: '0 auto 16px' }}>{selectedUser.charAt(0)}</div>
             <h2 style={{ textAlign: 'center' }}>@{selectedUser}</h2>
+            
+            {selectedUser === userName && (
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <div style={{ color: 'var(--red)', fontWeight: 'bold' }}>HP: {hp}%</div>
+                <div className="bar-track" style={{ height: 6, width: '100px', margin: '4px auto' }}><div className="bar-fill bar-hp" style={{ width: `${hp}%` }}></div></div>
+                <button onClick={() => setHp(100)} className="modal-btn-ghost" style={{ fontSize: '.6rem', padding: '2px 8px' }}>Reset Vitality</button>
+              </div>
+            )}
+
             <div className="modal-stats">
                <div className="modal-stat"><div>{selectedUserStats.attacks}</div><span>Ataques</span></div>
                <div className="modal-stat"><div>{selectedUserStats.defends}</div><span>Defesas</span></div>
             </div>
+
+            {selectedUser === userName && (
+              <div style={{ marginTop: 20 }}>
+                <h4 style={{ fontSize: '.8rem', marginBottom: 8, color: 'var(--gold)' }}>ALINHAMENTO DE FACÇÃO</h4>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                  {FACTIONS.map(f => (
+                    <button key={f.id} onClick={() => setUserFaction(f)} className={`skill-node ${userFaction.id === f.id ? 'active' : ''}`} style={{ padding: '4px 8px', fontSize: '.7rem' }}>{f.name}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="skin-selector" style={{ marginTop: 20 }}>
                <button className={`skin-btn ${currentSkin === 'default' ? 'active' : ''}`} onClick={() => setCurrentSkin('default')}>🚀 Scifi</button>
                <button className={`skin-btn ${currentSkin === 'brasil' ? 'active' : ''}`} onClick={() => setCurrentSkin('brasil')}>🇧🇷 Brasil</button>
@@ -413,6 +434,18 @@ export default function App() {
           <div className="modal-panel" onClick={e => e.stopPropagation()}>
             <h2 style={{ textAlign: 'center' }}>🧬 NEXUS</h2>
             <p style={{ textAlign: 'center', color: 'var(--gold)', fontSize: '2rem', fontWeight: 900 }}>{sp} SP</p>
+            
+            <div className="card" style={{ padding: 12, marginBottom: 16 }}>
+               <h4 style={{ fontSize: '.8rem', color: 'var(--gold)', marginBottom: 8 }}>MÓDULOS DE ARMA</h4>
+               <div className="arsenal-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {themedWeapons.map(w => (
+                    <button key={w.id} className={`weapon-btn ${selectedWeapon.id === w.id ? 'selected' : ''}`} onClick={() => setSelectedWeapon(w)}>
+                      <span style={{ fontSize: '1.2rem' }}>{w.icon}</span>
+                    </button>
+                  ))}
+               </div>
+            </div>
+
             <div className="skill-grid">
                <div className={`skill-node card ${unlockedSkills.includes('regen') ? 'active' : ''}`} onClick={() => buySkill('regen', 1)}>⚡ Regen</div>
                <div className={`skill-node card ${unlockedSkills.includes('firepower') ? 'active' : ''}`} onClick={() => buySkill('firepower', 2)}>🔥 Fúria</div>
